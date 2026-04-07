@@ -3,3 +3,5 @@
 .vscode
 steam
 *.kate-swp
+.DS_Store
+thumbs.db
