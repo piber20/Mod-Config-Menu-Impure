@@ -1264,13 +1264,17 @@ function MCM.GetOffset()
 	return MCM.CurrentScreenOffset
 end
 
-function MCM.GetScreenSize() --based off of code from kilburn
-	local game = Game()
-	local room = game:GetRoom()
-	local pos = room:WorldToScreenPosition(vecZero) - room:GetRenderScrollOffset() - game.ScreenShakeOffset
-	local rx = pos.X + 60 * 26 / 40
-	local ry = pos.Y + 140 * (26 / 40)
-	return Vector(rx*2 + 13*26, ry*2 + 7*26)
+function MCM.GetScreenSize()
+	if REPENTANCE then
+		return Vector(Isaac.GetScreenWidth(), Isaac.GetScreenHeight())
+	else--based off of code from kilburn
+		local game = Game()
+		local room = game:GetRoom()
+		local pos = room:WorldToScreenPosition(vecZero) - room:GetRenderScrollOffset() - game.ScreenShakeOffset
+		local rx = pos.X + 60 * 26 / 40
+		local ry = pos.Y + 140 * (26 / 40)
+		return Vector(rx*2 + 13*26, ry*2 + 7*26)
+	end
 end
 
 function MCM.Round(num, decimalPlaces)
