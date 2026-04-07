@@ -1618,16 +1618,16 @@ local actionsSelect = {ButtonAction.ACTION_ITEM, ButtonAction.ACTION_PAUSE, Butt
 --ignore these buttons for the above actions
 local ignoreActionButtons = {Controller.BUTTON_A, Controller.BUTTON_B, Controller.BUTTON_X, Controller.BUTTON_Y}
 
-local currentMenuCategory = nil
-local currentMenuSubcategory = nil
-local currentMenuOption = nil
-local function updateCurrentMenuVars()
+MCM.CurrentCategory = nil
+MCM.CurrentSubcategory = nil
+MCM.CurrentOption = nil
+function MCM.UpdateCurrentVars()
 	if MCM.MenuData[configMenuPositionCursorCategory] then
-		currentMenuCategory = MCM.MenuData[configMenuPositionCursorCategory]
-		if currentMenuCategory.Subcategories and currentMenuCategory.Subcategories[configMenuPositionCursorSubcategory] then
-			currentMenuSubcategory = currentMenuCategory.Subcategories[configMenuPositionCursorSubcategory]
-			if currentMenuSubcategory.Options and currentMenuSubcategory.Options[configMenuPositionCursorOption] then
-				currentMenuOption = currentMenuSubcategory.Options[configMenuPositionCursorOption]
+		MCM.CurrentCategory = MCM.MenuData[configMenuPositionCursorCategory]
+		if MCM.CurrentCategory.Subcategories and MCM.CurrentCategory.Subcategories[configMenuPositionCursorSubcategory] then
+			MCM.CurrentSubcategory = MCM.CurrentCategory.Subcategories[configMenuPositionCursorSubcategory]
+			if MCM.CurrentSubcategory.Options and MCM.CurrentSubcategory.Options[configMenuPositionCursorOption] then
+				MCM.CurrentOption = MCM.CurrentSubcategory.Options[configMenuPositionCursorOption]
 			end
 		end
 	end
@@ -1637,16 +1637,16 @@ end
 function MCM.EnterPopup()
 	if configMenuInSubcategory and configMenuInOptions and not configMenuInPopup then
 		local foundValidPopup = false
-		if currentMenuOption
-		and currentMenuOption.Type
-		and currentMenuOption.Type ~= MCM.OptionType.SPACE
-		and (currentMenuOption.Popup or currentMenuOption.Restart or currentMenuOption.Rerun) then
+		if MCM.CurrentOption
+		and MCM.CurrentOption.Type
+		and MCM.CurrentOption.Type ~= MCM.OptionType.SPACE
+		and (MCM.CurrentOption.Popup or MCM.CurrentOption.Restart or MCM.CurrentOption.Rerun) then
 			foundValidPopup = true
 		end
 		if foundValidPopup then
 			local popupSpritesheet = MCM.PopupGfx.THIN_SMALL
-			if currentMenuOption.PopupGfx and type(currentMenuOption.PopupGfx) == "string" then
-				popupSpritesheet = currentMenuOption.PopupGfx
+			if MCM.CurrentOption.PopupGfx and type(MCM.CurrentOption.PopupGfx) == "string" then
+				popupSpritesheet = MCM.CurrentOption.PopupGfx
 			end
 			PopupSprite:ReplaceSpritesheet(5, popupSpritesheet)
 			PopupSprite:LoadGraphics()
@@ -1657,13 +1657,13 @@ end
 
 function MCM.EnterOptions()
 	if configMenuInSubcategory and not configMenuInOptions then
-		if currentMenuSubcategory
-		and currentMenuSubcategory.Options
-		and #currentMenuSubcategory.Options > 0 then
+		if MCM.CurrentSubcategory
+		and MCM.CurrentSubcategory.Options
+		and #MCM.CurrentSubcategory.Options > 0 then
 		
-			for optionIndex=1, #currentMenuSubcategory.Options do
+			for optionIndex=1, #MCM.CurrentSubcategory.Options do
 				
-				local thisOption = currentMenuSubcategory.Options[optionIndex]
+				local thisOption = MCM.CurrentSubcategory.Options[optionIndex]
 				
 				if thisOption.Type
 				and thisOption.Type ~= MCM.OptionType.SPACE
@@ -1690,9 +1690,9 @@ function MCM.EnterSubcategory()
 		SubcategoryDividerSprite.Color = colorDefault
 		
 		local hasUsableCategories = false
-		if currentMenuCategory.Subcategories then
-			for j=1, #currentMenuCategory.Subcategories do
-				if currentMenuCategory.Subcategories[j].Name ~= "Uncategorized" then
+		if MCM.CurrentCategory.Subcategories then
+			for j=1, #MCM.CurrentCategory.Subcategories do
+				if MCM.CurrentCategory.Subcategories[j].Name ~= "Uncategorized" then
 					hasUsableCategories = true
 				end
 			end
@@ -1709,13 +1709,13 @@ local rerunWarnMessage = nil
 function MCM.LeavePopup()
 	if configMenuInSubcategory and configMenuInOptions and configMenuInPopup then
 		
-		if currentMenuOption then
+		if MCM.CurrentOption then
 		
-			if currentMenuOption.Restart then
+			if MCM.CurrentOption.Restart then
 			
 				restartWarnMessage = "One or more settings require you to restart the game"
 			
-			elseif currentMenuOption.Rerun then
+			elseif MCM.CurrentOption.Rerun then
 			
 				rerunWarnMessage = "One or more settings require you to start a new run"
 				
@@ -1735,9 +1735,9 @@ function MCM.LeaveOptions()
 		OptionsCursorSpriteDown.Color = colorHalf
 		
 		local hasUsableCategories = false
-		if currentMenuCategory.Subcategories then
-			for j=1, #currentMenuCategory.Subcategories do
-				if currentMenuCategory.Subcategories[j].Name ~= "Uncategorized" then
+		if MCM.CurrentCategory.Subcategories then
+			for j=1, #MCM.CurrentCategory.Subcategories do
+				if MCM.CurrentCategory.Subcategories[j].Name ~= "Uncategorized" then
 					hasUsableCategories = true
 				end
 			end
@@ -2133,7 +2133,7 @@ function MCM.PostRender()
 			
 		end
 		
-		updateCurrentMenuVars()
+		MCM.UpdateCurrentVars()
 		
 		local lastCursorCategoryPosition = configMenuPositionCursorCategory
 		local lastCursorSubcategoryPosition = configMenuPositionCursorSubcategory
@@ -2152,23 +2152,23 @@ function MCM.PostRender()
 		
 		if configMenuInPopup then
 		
-			if currentMenuOption then
-				local optionType = currentMenuOption.Type
-				local optionCurrent = currentMenuOption.CurrentSetting
-				local optionOnChange = currentMenuOption.OnChange
+			if MCM.CurrentOption then
+				local optionType = MCM.CurrentOption.Type
+				local optionCurrent = MCM.CurrentOption.CurrentSetting
+				local optionOnChange = MCM.CurrentOption.OnChange
 
 				if optionType == MCM.OptionType.KEYBIND_KEYBOARD
 				or optionType == MCM.OptionType.KEYBIND_CONTROLLER
-				or currentMenuOption.OnSelect then
+				or MCM.CurrentOption.OnSelect then
 
 					if not isPaused then
 
 						if pressingNonRebindableKey
 						and not (pressingButton == "BACK"
 						or pressingButton == "LEFT"
-						or (currentMenuOption.OnSelect and (pressingButton == "SELECT" or pressingButton == "RIGHT"))
-						or (currentMenuOption.IsResetKeybind and pressingButton == "RESET")
-						or (currentMenuOption.IsOpenMenuKeybind and pressedToggleMenu)) then
+						or (MCM.CurrentOption.OnSelect and (pressingButton == "SELECT" or pressingButton == "RIGHT"))
+						or (MCM.CurrentOption.IsResetKeybind and pressingButton == "RESET")
+						or (MCM.CurrentOption.IsOpenMenuKeybind and pressedToggleMenu)) then
 							sfx:Play(SoundEffect.SOUND_BOSS2INTRO_ERRORBUZZ, 0.75, 0, false, 1)
 						else
 							local numberToChange = nil
@@ -2204,7 +2204,7 @@ function MCM.PostRender()
 										end
 									end
 								end
-							elseif currentMenuOption.OnSelect then
+							elseif MCM.CurrentOption.OnSelect then
 								if pressingButton == "BACK" or pressingButton == "LEFT" then
 									receivedInput = true
 								end
@@ -2222,7 +2222,7 @@ function MCM.PostRender()
 											optionOnChange(numberToChange)
 										end
 									elseif type(optionCurrent) == "number" then
-										currentMenuOption.CurrentSetting = numberToChange
+										MCM.CurrentOption.CurrentSetting = numberToChange
 									end
 				
 									--callback
@@ -2230,17 +2230,17 @@ function MCM.PostRender()
 									(
 										CustomCallbacks.MCM_POST_MODIFY_SETTING, --callback id
 										nil,
-										{currentMenuOption.CurrentSetting, numberToChange}, --args to send
-										{currentMenuCategory.Name, currentMenuOption.Attribute} --extra variables
+										{MCM.CurrentOption.CurrentSetting, numberToChange}, --args to send
+										{MCM.CurrentCategory.Name, MCM.CurrentOption.Attribute} --extra variables
 									)
 									
-								elseif currentMenuOption.OnSelect and numberToChange then
-									currentMenuOption.OnSelect()
+								elseif MCM.CurrentOption.OnSelect and numberToChange then
+									MCM.CurrentOption.OnSelect()
 								end
 								
 								leavePopup = true
 								
-								local sound = currentMenuOption.Sound
+								local sound = MCM.CurrentOption.Sound
 								if not sound then
 									sound = SoundEffect.SOUND_PLOP
 								end
@@ -2253,7 +2253,7 @@ function MCM.PostRender()
 				end
 			end
 			
-			if currentMenuOption.Restart or currentMenuOption.Rerun then
+			if MCM.CurrentOption.Restart or MCM.CurrentOption.Rerun then
 			
 				--confirmed left press
 				if pressingButton == "RIGHT" then
@@ -2287,15 +2287,15 @@ function MCM.PostRender()
 				configMenuPositionCursorOption = configMenuPositionCursorOption - 1 --move options cursor up
 			end
 			
-			if pressingButton == "SELECT" or pressingButton == "RIGHT" or pressingButton == "LEFT" or (pressingButton == "RESET" and currentMenuOption and currentMenuOption.Default ~= nil) then
+			if pressingButton == "SELECT" or pressingButton == "RIGHT" or pressingButton == "LEFT" or (pressingButton == "RESET" and MCM.CurrentOption and MCM.CurrentOption.Default ~= nil) then
 				if pressingButton == "LEFT" then
 					leaveOptions = true
 				end
 				
-				if currentMenuOption then
-					local optionType = currentMenuOption.Type
-					local optionCurrent = currentMenuOption.CurrentSetting
-					local optionOnChange = currentMenuOption.OnChange
+				if MCM.CurrentOption then
+					local optionType = MCM.CurrentOption.Type
+					local optionCurrent = MCM.CurrentOption.CurrentSetting
+					local optionOnChange = MCM.CurrentOption.OnChange
 					
 					if optionType == MCM.OptionType.SCROLL or optionType == MCM.OptionType.NUMBER then
 						leaveOptions = false
@@ -2306,7 +2306,7 @@ function MCM.PostRender()
 							numberToChange = optionCurrent()
 						end
 						
-						local modifyBy = currentMenuOption.ModifyBy or 1
+						local modifyBy = MCM.CurrentOption.ModifyBy or 1
 						modifyBy = math.max(modifyBy,0.001)
 						if math.floor(modifyBy) == modifyBy then --force modify by into being an integer instead of a float if it should be
 							modifyBy = math.floor(modifyBy)
@@ -2316,28 +2316,28 @@ function MCM.PostRender()
 							numberToChange = numberToChange + modifyBy
 						elseif pressingButton == "LEFT" then
 							numberToChange = numberToChange - modifyBy
-						elseif pressingButton == "RESET" and currentMenuOption.Default ~= nil then
-							numberToChange = currentMenuOption.Default
-							if type(currentMenuOption.Default) == "function" then
-								numberToChange = currentMenuOption.Default()
+						elseif pressingButton == "RESET" and MCM.CurrentOption.Default ~= nil then
+							numberToChange = MCM.CurrentOption.Default
+							if type(MCM.CurrentOption.Default) == "function" then
+								numberToChange = MCM.CurrentOption.Default()
 							end
 						end
 						
 						if optionType == MCM.OptionType.SCROLL then
 							numberToChange = math.max(math.min(math.floor(numberToChange), 10), 0)
 						else
-							if currentMenuOption.Maximum and numberToChange > currentMenuOption.Maximum then
-								if not currentMenuOption.NoLoopFromMaxMin and currentMenuOption.Minimum then
-									numberToChange = currentMenuOption.Minimum
+							if MCM.CurrentOption.Maximum and numberToChange > MCM.CurrentOption.Maximum then
+								if not MCM.CurrentOption.NoLoopFromMaxMin and MCM.CurrentOption.Minimum then
+									numberToChange = MCM.CurrentOption.Minimum
 								else
-									numberToChange = currentMenuOption.Maximum
+									numberToChange = MCM.CurrentOption.Maximum
 								end
 							end
-							if currentMenuOption.Minimum and numberToChange < currentMenuOption.Minimum then
-								if not currentMenuOption.NoLoopFromMaxMin and currentMenuOption.Maximum then
-									numberToChange = currentMenuOption.Maximum
+							if MCM.CurrentOption.Minimum and numberToChange < MCM.CurrentOption.Minimum then
+								if not MCM.CurrentOption.NoLoopFromMaxMin and MCM.CurrentOption.Maximum then
+									numberToChange = MCM.CurrentOption.Maximum
 								else
-									numberToChange = currentMenuOption.Minimum
+									numberToChange = MCM.CurrentOption.Minimum
 								end
 							end
 						end
@@ -2354,7 +2354,7 @@ function MCM.PostRender()
 							end
 							optionChanged = true
 						elseif type(optionCurrent) == "number" then
-							currentMenuOption.CurrentSetting = numberToChange
+							MCM.CurrentOption.CurrentSetting = numberToChange
 							optionChanged = true
 						end
 	
@@ -2363,11 +2363,11 @@ function MCM.PostRender()
 						(
 							CustomCallbacks.MCM_POST_MODIFY_SETTING, --callback id
 							nil,
-							{currentMenuOption.CurrentSetting, numberToChange}, --args to send
-							{currentMenuCategory.Name, currentMenuOption.Attribute} --extra variables
+							{MCM.CurrentOption.CurrentSetting, numberToChange}, --args to send
+							{MCM.CurrentCategory.Name, MCM.CurrentOption.Attribute} --extra variables
 						)
 						
-						local sound = currentMenuOption.Sound
+						local sound = MCM.CurrentOption.Sound
 						if not sound then
 							sound = SoundEffect.SOUND_PLOP
 						end
@@ -2383,10 +2383,10 @@ function MCM.PostRender()
 							boolToChange = optionCurrent()
 						end
 						
-						if pressingButton == "RESET" and currentMenuOption.Default ~= nil then
-							boolToChange = currentMenuOption.Default
-							if type(currentMenuOption.Default) == "function" then
-								boolToChange = currentMenuOption.Default()
+						if pressingButton == "RESET" and MCM.CurrentOption.Default ~= nil then
+							boolToChange = MCM.CurrentOption.Default
+							if type(MCM.CurrentOption.Default) == "function" then
+								boolToChange = MCM.CurrentOption.Default()
 							end
 						else
 							boolToChange = (not boolToChange)
@@ -2398,7 +2398,7 @@ function MCM.PostRender()
 							end
 							optionChanged = true
 						elseif type(optionCurrent) == "boolean" then
-							currentMenuOption.CurrentSetting = boolToChange
+							MCM.CurrentOption.CurrentSetting = boolToChange
 							optionChanged = true
 						end
 	
@@ -2407,27 +2407,27 @@ function MCM.PostRender()
 						(
 							CustomCallbacks.MCM_POST_MODIFY_SETTING, --callback id
 							nil,
-							{currentMenuOption.CurrentSetting, boolToChange}, --args to send
-							{currentMenuCategory.Name, currentMenuOption.Attribute} --extra variables
+							{MCM.CurrentOption.CurrentSetting, boolToChange}, --args to send
+							{MCM.CurrentCategory.Name, MCM.CurrentOption.Attribute} --extra variables
 						)
 						
-						local sound = currentMenuOption.Sound
+						local sound = MCM.CurrentOption.Sound
 						if not sound then
 							sound = SoundEffect.SOUND_PLOP
 						end
 						if sound >= 0 then
 							sfx:Play(sound, 1, 0, false, 1)
 						end
-					elseif (optionType == MCM.OptionType.KEYBIND_KEYBOARD or optionType == MCM.OptionType.KEYBIND_CONTROLLER) and pressingButton == "RESET" and currentMenuOption.Default ~= nil then
+					elseif (optionType == MCM.OptionType.KEYBIND_KEYBOARD or optionType == MCM.OptionType.KEYBIND_CONTROLLER) and pressingButton == "RESET" and MCM.CurrentOption.Default ~= nil then
 						local numberToChange = optionCurrent
 						
 						if type(optionCurrent) == "function" then
 							numberToChange = optionCurrent()
 						end
 						
-						numberToChange = currentMenuOption.Default
-						if type(currentMenuOption.Default) == "function" then
-							numberToChange = currentMenuOption.Default()
+						numberToChange = MCM.CurrentOption.Default
+						if type(MCM.CurrentOption.Default) == "function" then
+							numberToChange = MCM.CurrentOption.Default()
 						end
 						
 						if type(optionCurrent) == "function" then
@@ -2436,7 +2436,7 @@ function MCM.PostRender()
 							end
 							optionChanged = true
 						elseif type(optionCurrent) == "number" then
-							currentMenuOption.CurrentSetting = numberToChange
+							MCM.CurrentOption.CurrentSetting = numberToChange
 							optionChanged = true
 						end
 	
@@ -2445,11 +2445,11 @@ function MCM.PostRender()
 						(
 							CustomCallbacks.MCM_POST_MODIFY_SETTING, --callback id
 							nil,
-							{currentMenuOption.CurrentSetting, numberToChange}, --args to send
-							{currentMenuCategory.Name, currentMenuOption.Attribute} --extra variables
+							{MCM.CurrentOption.CurrentSetting, numberToChange}, --args to send
+							{MCM.CurrentCategory.Name, MCM.CurrentOption.Attribute} --extra variables
 						)
 						
-						local sound = currentMenuOption.Sound
+						local sound = MCM.CurrentOption.Sound
 						if not sound then
 							sound = SoundEffect.SOUND_PLOP
 						end
@@ -2457,10 +2457,10 @@ function MCM.PostRender()
 							sfx:Play(sound, 1, 0, false, 1)
 						end
 					elseif optionType ~= MCM.OptionType.SPACE and pressingButton == "RIGHT" then
-						if currentMenuOption.Popup then
+						if MCM.CurrentOption.Popup then
 							enterPopup = true
-						elseif currentMenuOption.OnSelect then
-							currentMenuOption.OnSelect()
+						elseif MCM.CurrentOption.OnSelect then
+							MCM.CurrentOption.OnSelect()
 						end
 					end
 				end
@@ -2473,26 +2473,26 @@ function MCM.PostRender()
 			
 			--confirmed select press
 			if pressingButton == "SELECT" then
-				if currentMenuOption then
-					if currentMenuOption.Popup then
+				if MCM.CurrentOption then
+					if MCM.CurrentOption.Popup then
 						enterPopup = true
-					elseif currentMenuOption.OnSelect then
-						currentMenuOption.OnSelect()
+					elseif MCM.CurrentOption.OnSelect then
+						MCM.CurrentOption.OnSelect()
 					end
 				end
 			end
 			
 			--reset command
 			if optionChanged then
-				if currentMenuOption.Restart or currentMenuOption.Rerun then
+				if MCM.CurrentOption.Restart or MCM.CurrentOption.Rerun then
 					enterPopup = true
 				end
 			end
 		elseif configMenuInSubcategory then
 			local hasUsableCategories = false
-			if currentMenuCategory.Subcategories then
-				for j=1, #currentMenuCategory.Subcategories do
-					if currentMenuCategory.Subcategories[j].Name ~= "Uncategorized" then
+			if MCM.CurrentCategory.Subcategories then
+				for j=1, #MCM.CurrentCategory.Subcategories do
+					if MCM.CurrentCategory.Subcategories[j].Name ~= "Uncategorized" then
 						hasUsableCategories = true
 					end
 				end
@@ -2612,9 +2612,9 @@ function MCM.PostRender()
 			
 				--cursor position
 				if configMenuPositionCursorSubcategory < 1 then --move from the top of the list to the bottom
-					configMenuPositionCursorSubcategory = #currentMenuCategory.Subcategories
+					configMenuPositionCursorSubcategory = #MCM.CurrentCategory.Subcategories
 				end
-				if configMenuPositionCursorSubcategory > #currentMenuCategory.Subcategories then --move from the bottom of the list to the top
+				if configMenuPositionCursorSubcategory > #MCM.CurrentCategory.Subcategories then --move from the bottom of the list to the top
 					configMenuPositionCursorSubcategory = 1
 				end
 				
@@ -2622,10 +2622,10 @@ function MCM.PostRender()
 				if configMenuPositionFirstSubcategory > 1 and configMenuPositionCursorSubcategory <= configMenuPositionFirstSubcategory+1 then
 					configMenuPositionFirstSubcategory = configMenuPositionCursorSubcategory-1
 				end
-				if configMenuPositionFirstSubcategory+(configMenuSubcategoriesCanShow-1) < #currentMenuCategory.Subcategories and configMenuPositionCursorSubcategory >= 1+(configMenuSubcategoriesCanShow-2) then
+				if configMenuPositionFirstSubcategory+(configMenuSubcategoriesCanShow-1) < #MCM.CurrentCategory.Subcategories and configMenuPositionCursorSubcategory >= 1+(configMenuSubcategoriesCanShow-2) then
 					configMenuPositionFirstSubcategory = configMenuPositionCursorSubcategory-(configMenuSubcategoriesCanShow-2)
 				end
-				configMenuPositionFirstSubcategory = math.min(math.max(configMenuPositionFirstSubcategory, 1), #currentMenuCategory.Subcategories-(configMenuSubcategoriesCanShow-1))
+				configMenuPositionFirstSubcategory = math.min(math.max(configMenuPositionFirstSubcategory, 1), #MCM.CurrentCategory.Subcategories-(configMenuSubcategoriesCanShow-1))
 				
 				--make sure option positions are 1
 				configMenuPositionCursorOption = 1
@@ -2637,16 +2637,16 @@ function MCM.PostRender()
 		--options cursor position was changed
 		if lastCursorOptionsPosition ~= configMenuPositionCursorOption then
 			if configMenuInOptions
-			and currentMenuSubcategory
-			and currentMenuSubcategory.Options
-			and #currentMenuSubcategory.Options > 0 then
+			and MCM.CurrentSubcategory
+			and MCM.CurrentSubcategory.Options
+			and #MCM.CurrentSubcategory.Options > 0 then
 				
 				--find next valid option that isn't a space
 				local nextValidOptionSelection = configMenuPositionCursorOption
 				local optionIndex = configMenuPositionCursorOption
-				for i=1, #currentMenuSubcategory.Options*2 do
+				for i=1, #MCM.CurrentSubcategory.Options*2 do
 				
-					local thisOption = currentMenuSubcategory.Options[optionIndex]
+					local thisOption = MCM.CurrentSubcategory.Options[optionIndex]
 					
 					if thisOption
 					and thisOption.Type
@@ -2665,21 +2665,21 @@ function MCM.PostRender()
 						optionIndex = optionIndex - 1
 					end
 					if optionIndex < 1 then
-						optionIndex = #currentMenuSubcategory.Options
+						optionIndex = #MCM.CurrentSubcategory.Options
 					end
-					if optionIndex > #currentMenuSubcategory.Options then
+					if optionIndex > #MCM.CurrentSubcategory.Options then
 						optionIndex = 1
 					end
 				end
 				
 				configMenuPositionCursorOption = nextValidOptionSelection
 				
-				updateCurrentMenuVars()
+				MCM.UpdateCurrentVars()
 				
 				--first options selection to render
 				local hasSubcategories = false
-				for j=1, #currentMenuCategory.Subcategories do
-					if currentMenuCategory.Subcategories[j].Name ~= "Uncategorized" then
+				for j=1, #MCM.CurrentCategory.Subcategories do
+					if MCM.CurrentCategory.Subcategories[j].Name ~= "Uncategorized" then
 						hasSubcategories = true
 					end
 				end
@@ -2761,16 +2761,16 @@ function MCM.PostRender()
 		local optionPosTopmost = centerPos.Y - 108
 		local optionPosBottommost = centerPos.Y + 86
 		
-		if currentMenuSubcategory
-		and currentMenuSubcategory.Options
-		and #currentMenuSubcategory.Options > 0 then
+		if MCM.CurrentSubcategory
+		and MCM.CurrentSubcategory.Options
+		and #MCM.CurrentSubcategory.Options > 0 then
 			
-			numOptions = #currentMenuSubcategory.Options
+			numOptions = #MCM.CurrentSubcategory.Options
 		
 			local hasSubcategories = false
-			if currentMenuCategory.Subcategories then
-				for j=1, #currentMenuCategory.Subcategories do
-					if currentMenuCategory.Subcategories[j].Name ~= "Uncategorized" then
+			if MCM.CurrentCategory.Subcategories then
+				for j=1, #MCM.CurrentCategory.Subcategories do
+					if MCM.CurrentCategory.Subcategories[j].Name ~= "Uncategorized" then
 						numOptions = numOptions + 2
 						hasSubcategories = true
 						break
@@ -2836,7 +2836,7 @@ function MCM.PostRender()
 		
 		--get if controls can be shown
 		local shouldShowControls = true
-		if configMenuInOptions and currentMenuOption and currentMenuOption.HideControls then
+		if configMenuInOptions and MCM.CurrentOption and MCM.CurrentOption.HideControls then
 			shouldShowControls = false
 		end
 		if not MCM.Config["Mod Config Menu"].ShowControls then
@@ -2893,13 +2893,13 @@ function MCM.PostRender()
 		local lastOptionPos = optionPos
 		local renderedOptions = 0
 		
-		if currentMenuCategory then
+		if MCM.CurrentCategory then
 		
 			local hasUncategorizedCategory = false
 			local hasSubcategories = false
 			local numCategories = 0
-			for j=1, #currentMenuCategory.Subcategories do
-				if currentMenuCategory.Subcategories[j].Name == "Uncategorized" then
+			for j=1, #MCM.CurrentCategory.Subcategories do
+				if MCM.CurrentCategory.Subcategories[j].Name == "Uncategorized" then
 					hasUncategorizedCategory = true
 				else
 					hasSubcategories = true
@@ -2924,11 +2924,11 @@ function MCM.PostRender()
 				
 					local renderedSubcategories = 0
 				
-					for subcategoryIndex=1, #currentMenuCategory.Subcategories do
+					for subcategoryIndex=1, #MCM.CurrentCategory.Subcategories do
 					
 						if subcategoryIndex >= configMenuPositionFirstSubcategory then
 						
-							local thisSubcategory = currentMenuCategory.Subcategories[subcategoryIndex]
+							local thisSubcategory = MCM.CurrentCategory.Subcategories[subcategoryIndex]
 							
 							local posOffset = 0
 						
@@ -2965,7 +2965,7 @@ function MCM.PostRender()
 									SubcategoryCursorSpriteLeft:Render(lastOptionPos + Vector(-125,0), vecZero, vecZero)
 								end
 								
-								if subcategoryIndex < #currentMenuCategory.Subcategories then --if this isn't the last thing
+								if subcategoryIndex < #MCM.CurrentCategory.Subcategories then --if this isn't the last thing
 									SubcategoryCursorSpriteRight:Render(lastOptionPos + Vector(125,0), vecZero, vecZero)
 								end
 								
@@ -3006,13 +3006,13 @@ function MCM.PostRender()
 		
 		local firstOptionPos = lastOptionPos
 		
-		if currentMenuSubcategory
-		and currentMenuSubcategory.Options
-		and #currentMenuSubcategory.Options > 0 then
+		if MCM.CurrentSubcategory
+		and MCM.CurrentSubcategory.Options
+		and #MCM.CurrentSubcategory.Options > 0 then
 		
-			for optionIndex=1, #currentMenuSubcategory.Options do
+			for optionIndex=1, #MCM.CurrentSubcategory.Options do
 				
-				local thisOption = currentMenuSubcategory.Options[optionIndex]
+				local thisOption = MCM.CurrentSubcategory.Options[optionIndex]
 				
 				local cursorIsAtThisOption = configMenuPositionCursorOption == optionIndex and configMenuInOptions
 				local posOffset = 10
@@ -3186,7 +3186,7 @@ function MCM.PostRender()
 		--title
 		local titleText = "Mod Config Menu"
 		if configMenuInSubcategory then
-			titleText = tostring(currentMenuCategory.Name)
+			titleText = tostring(MCM.CurrentCategory.Name)
 		end
 		local titleTextOffset = Font16Bold:GetStringWidthUTF8(titleText)/2
 		MCM.DrawFont(Font16Bold, titleText, titlePos.X - titleTextOffset, titlePos.Y - 9, mainFontColor, 0, true)
@@ -3197,20 +3197,20 @@ function MCM.PostRender()
 		
 		if configMenuInOptions then
 		
-			if currentMenuOption and currentMenuOption.Info then
-				infoTable = currentMenuOption.Info
+			if MCM.CurrentOption and MCM.CurrentOption.Info then
+				infoTable = MCM.CurrentOption.Info
 			end
 			
 		elseif configMenuInSubcategory then
 		
-			if currentMenuSubcategory and currentMenuSubcategory.Info then
-				infoTable = currentMenuSubcategory.Info
+			if MCM.CurrentSubcategory and MCM.CurrentSubcategory.Info then
+				infoTable = MCM.CurrentSubcategory.Info
 			end
 			
-		elseif currentMenuCategory and currentMenuCategory.Info then
+		elseif MCM.CurrentCategory and MCM.CurrentCategory.Info then
 			
-			infoTable = currentMenuCategory.Info
-			if currentMenuCategory.IsOld then
+			infoTable = MCM.CurrentCategory.Info
+			if MCM.CurrentCategory.IsOld then
 				isOldInfo = true
 			end
 			
@@ -3246,8 +3246,8 @@ function MCM.PostRender()
 		
 		--hud offset
 		if configMenuInOptions
-		and currentMenuOption
-		and currentMenuOption.ShowOffset then
+		and MCM.CurrentOption
+		and MCM.CurrentOption.ShowOffset then
 		
 			--render the visual
 			HudOffsetVisualBottomRight:Render(MCM.GetScreenBottomRight(), vecZero, vecZero)
@@ -3259,22 +3259,22 @@ function MCM.PostRender()
 		
 		--popup
 		if configMenuInPopup
-		and currentMenuOption
-		and (currentMenuOption.Popup or currentMenuOption.Restart or currentMenuOption.Rerun) then
+		and MCM.CurrentOption
+		and (MCM.CurrentOption.Popup or MCM.CurrentOption.Restart or MCM.CurrentOption.Rerun) then
 		
 			PopupSprite:Render(centerPos, vecZero, vecZero)
 			
-			local popupTable = currentMenuOption.Popup
+			local popupTable = MCM.CurrentOption.Popup
 			
 			if not popupTable then
 			
-				if currentMenuOption.Restart then
+				if MCM.CurrentOption.Restart then
 				
 					popupTable = "Restart the game for this setting to take effect"
 				
 				end
 			
-				if currentMenuOption.Rerun then
+				if MCM.CurrentOption.Rerun then
 				
 					popupTable = "Start a new run for this setting to take effect"
 				
@@ -3284,7 +3284,7 @@ function MCM.PostRender()
 			
 			if popupTable then
 				
-				local lineWidth = currentMenuOption.PopupWidth or 180
+				local lineWidth = MCM.CurrentOption.PopupWidth or 180
 				
 				local popupTableDisplay = MCM.ConvertDisplayToTextTable(popupTable, lineWidth, Font10)
 				
@@ -3334,10 +3334,10 @@ function MCM.PostRender()
 				--[[
 				if configMenuInSubcategory
 				and configMenuInOptions
-				and currentMenuOption
-				and currentMenuOption.Type
-				and currentMenuOption.Type ~= MCM.OptionType.SPACE
-				and currentMenuOption.Popup then
+				and MCM.CurrentOption
+				and MCM.CurrentOption.Type
+				and MCM.CurrentOption.Type ~= MCM.OptionType.SPACE
+				and MCM.CurrentOption.Popup then
 					foundValidPopup = true
 				end
 				]]
@@ -3492,6 +3492,14 @@ function MCM.ExecuteCmd(_, command, args)
 	
 end
 MCM.Mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, MCM.ExecuteCmd)
+
+function MCM.GetCurrentFocus()
+	return {
+		category = MCM.CurrentCategory,
+		subcategory = MCM.CurrentSubcategory,
+		option = MCM.CurrentOption
+	}
+end
 
 if MCM.StandaloneMod then
 
