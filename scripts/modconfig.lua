@@ -3635,8 +3635,8 @@ ScreenHelper = MCM
 
 --Make old mods that use FilepathHelper still kinda work
 FilepathHelper = MCM
-FilepathHelper.KnownFilePathsByName = {["resources/scripts/"] = true}
-FilepathHelper.KnownFilePathsByIndex = {"resources/scripts/"}
+FilepathHelper.KnownFilePathsByName = {["resources/scripts/"]=true,["mods"]=true}
+FilepathHelper.KnownFilePathsByIndex = {"resources/scripts/","mods"}
 function FilepathHelper.GetCurrentModPath() return FilepathHelper.KnownFilePathsByIndex[1] end
 function FilepathHelper.DoFile(path)
 	if type(include) == "function" then
