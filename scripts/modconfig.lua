@@ -4,7 +4,7 @@
 -- Chifilly's Mod Config Menu fork was 33.
 -- The "pure" version selected a starting point of 100 and incremented
 -- We'll start with 200 and increment. We'll display it as 2.00.
-local VERSION = 200
+local VERSION = 201
 
 -- Prevent older/same versions of this script from loading
 if MCM and MCM.Version and MCM.Version >= VERSION then
@@ -325,8 +325,6 @@ end
 local versionPrintFont = Font()
 versionPrintFont:Load("font/pftempestasevencondensed.fnt")
 
-local versionPrintTimer = 0
-
 --returns true if the room is clear and there are no active enemies and there are no projectiles
 MCM.IgnoreActiveEnemies = MCM.IgnoreActiveEnemies or {}
 function MCM.RoomIsSafe()
@@ -355,15 +353,16 @@ function MCM.RoomIsSafe()
 	
 end
 
+local versionPrintTimer = 0
+local isFirstRun
 MCM.IsVisible = false
 function MCM.PostGameStarted()
 
 	rerunWarnMessage = nil
 
-	if MCM.Config["Mod Config Menu"].ShowControls then
-	
+	if MCM.Config["Mod Config Menu"].ShowControls and isFirstRun then
 		versionPrintTimer = 120
-		
+		isFirstRun = false
 	end
 	
 	MCM.IsVisible = false
