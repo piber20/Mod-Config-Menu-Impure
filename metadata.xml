@@ -1,7 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <metadata>
-	<name> Mod Config Menu</name>
-	<directory>mod config menu</directory>
-	<description>Mod Config Menu Impure is an updated version of the Mod Config Menu mod for Afterbirth+ by the original author which retains integral features such as the ability to embed it in other mods and removes some uneeded scripts. Compatibility with old mods or mods made for unofficial versions of Mod Config Menu is kept as best as possible.
+    <name> Mod Config Menu</name>
+    <directory>mod config menu</directory>
+    <id>3701683951</id>
+    <description>Mod Config Menu Impure is an updated version of the Mod Config Menu mod for Afterbirth+ by the original author which retains integral features such as the ability to embed it in other mods and removes some uneeded scripts. Compatibility with old mods or mods made for unofficial versions of Mod Config Menu is kept as best as possible.
 
 The mod has been updated to work with Repentance and Repentance+ while keeping Afterbirth+ compatibility.
 
@@ -31,7 +33,7 @@ Controller:
 - Press B to go back.
 - Press A to select an item.
 - By default you can open the menu by pressing down the right control stick.</description>
-	<version>1.0</version>
-	<visibility/>
+    <version>1.2</version>
+    <visibility>Public</visibility>
+    <tag id="Lua"/>
 </metadata>
-
