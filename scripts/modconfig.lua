@@ -2011,7 +2011,7 @@ function MCM.PostRender()
 				
 			end
 			
-			if not MCM.MultipleButtonTriggered(ignoreActionButtons) then
+			if not MCM.MultipleButtonPressed(ignoreActionButtons) then
 				--pressing buttons
 				local downButtonPressed = MCM.MultipleActionTriggered(actionsDown)
 				if downButtonPressed then
