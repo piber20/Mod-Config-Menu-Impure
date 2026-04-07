@@ -7,7 +7,6 @@ local function exec(path)
 	end
 end
 
-exec("scripts.filepathhelper")
 exec("scripts.customcallbacks")
 exec("scripts.savehelper")
 

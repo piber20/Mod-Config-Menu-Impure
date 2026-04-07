@@ -102,13 +102,6 @@ if not CustomCallbackHelper then
 	exec("scripts.customcallbacks")
 end
 
-if not InputHelper then
-	exec("scripts.inputhelper")
-	if not InputHelper then
-		error("Mod Config Menu requires Input Helper to function", 2)
-	end
-end
-
 if not SaveHelper then
 	exec("scripts.savehelper")
 	if not SaveHelper then
@@ -118,6 +111,144 @@ end
 
 --create the mod
 MCM.Mod = MCM.Mod or RegisterMod("Mod Config Menu", 1)
+
+---------
+--Input--
+---------
+--Use in place of Keyboard enum to check for controller inputs
+Controller = Controller or {}
+Controller.DPAD_LEFT = 0
+Controller.DPAD_RIGHT = 1
+Controller.DPAD_UP = 2
+Controller.DPAD_DOWN = 3
+Controller.BUTTON_A = 4
+Controller.BUTTON_B = 5
+Controller.BUTTON_X = 6
+Controller.BUTTON_Y = 7
+Controller.BUMPER_LEFT = 8
+Controller.TRIGGER_LEFT = 9
+Controller.STICK_LEFT = 10
+Controller.BUMPER_RIGHT = 11
+Controller.TRIGGER_RIGHT = 12
+Controller.STICK_RIGHT = 13
+Controller.BUTTON_BACK = 14
+Controller.BUTTON_START = 15
+
+--Helps with displaying buttons
+MCM.KeyboardToString = MCM.KeyboardToString or {}
+for key,num in pairs(Keyboard) do
+	local keyString = key
+	local keyStart, keyEnd = string.find(keyString, "KEY_")
+	keyString = string.sub(keyString, keyEnd+1, string.len(keyString))
+	keyString = string.gsub(keyString, "_", " ")
+	MCM.KeyboardToString[num] = keyString
+end
+
+MCM.ControllerToString = MCM.ControllerToString or {}
+for button,num in pairs(Controller) do
+	local buttonString = button
+	if string.match(buttonString, "BUTTON_") then
+		local buttonStart, buttonEnd = string.find(buttonString, "BUTTON_")
+		buttonString = string.sub(buttonString, buttonEnd+1, string.len(buttonString))
+	end
+	if string.match(buttonString, "BUMPER_") then
+		local bumperStart, bumperEnd = string.find(buttonString, "BUMPER_")
+		buttonString = string.sub(buttonString, bumperEnd+1, string.len(buttonString)) .. "_BUMPER"
+	end
+	if string.match(buttonString, "TRIGGER_") then
+		local triggerStart, triggerEnd = string.find(buttonString, "TRIGGER_")
+		buttonString = string.sub(buttonString, triggerEnd+1, string.len(buttonString)) .. "_TRIGGER"
+	end
+	if string.match(buttonString, "STICK_") then
+		local stickStart, stickEnd = string.find(buttonString, "STICK_")
+		buttonString = string.sub(buttonString, stickEnd+1, string.len(buttonString)) .. "_STICK"
+	end
+	buttonString = string.gsub(buttonString, "_", " ")
+	MCM.ControllerToString[num] = buttonString
+end
+
+--Work around a bug related to controller inputs
+function MCM.KeyboardTriggered(key, controllerIndex)
+	return Input.IsButtonTriggered(key, controllerIndex) and not Input.IsButtonTriggered(key % 32, controllerIndex)
+end
+function MCM.KeyboardPressed(key, controllerIndex)
+	return Input.IsButtonPressed(key, controllerIndex) and not Input.IsButtonPressed(key % 32, controllerIndex)
+end
+
+--Multiple triggered functions
+function MCM.MultipleActionTriggered(actions, controllerIndex, func)
+	local func = func or Input.IsActionTriggered
+	for i,action in pairs(actions) do
+		for index=0, 4 do
+			if controllerIndex ~= nil then
+				index = controllerIndex
+			end
+			if func(action, index) then
+				return action
+			end
+			if controllerIndex ~= nil then
+				break
+			end
+		end
+	end
+	return nil
+end
+function MCM.MultipleActionPressed(actions, controllerIndex)
+	return MCM.MultipleActionTriggered(actions, controllerIndex, Input.IsActionPressed)
+end
+function MCM.MultipleButtonTriggered(buttons, controllerIndex)
+	return MCM.MultipleActionTriggered(buttons, controllerIndex, Input.IsButtonTriggered)
+end
+function MCM.MultipleButtonPressed(buttons, controllerIndex)
+	return MCM.MultipleActionTriggered(buttons, controllerIndex, Input.IsButtonPressed)
+end
+function MCM.MultipleKeyboardTriggered(keys, controllerIndex)
+	return MCM.MultipleActionTriggered(keys, controllerIndex, MCM.KeyboardTriggered)
+end
+function MCM.MultipleKeyboardPressed(keys, controllerIndex)
+	return MCM.MultipleActionTriggered(keys, controllerIndex, MCM.KeyboardPressed)
+end
+
+--force inputs
+local forcingActionTriggered = {}
+function MCM.ForceActionTriggered(controllerIndex, buttonAction, value)
+	forcingActionTriggered[controllerIndex] = forcingActionTriggered[controllerIndex] or {}
+	forcingActionTriggered[controllerIndex][buttonAction] = value
+end
+
+local forcingActionPressed = {}
+local forcingActionPressedTimer = {}
+function MCM.ForceActionPressed(controllerIndex, buttonAction, value, timer)
+	forcingActionPressed[controllerIndex] = forcingActionPressed[controllerIndex] or {}
+	forcingActionPressed[controllerIndex][buttonAction] = value
+	timer = timer or 1
+	forcingActionPressedTimer[controllerIndex] = forcingActionPressedTimer[controllerIndex] or {}
+	forcingActionPressedTimer[controllerIndex][buttonAction] = timer
+end
+
+function MCM.HandleForceActionPressed(_, entity, inputHook, buttonAction)
+	if entity and entity:ToPlayer() then
+		local player = entity:ToPlayer()
+		local controllerIndex = player.ControllerIndex
+		if inputHook == InputHook.IS_ACTION_TRIGGERED then
+			if forcingActionTriggered[controllerIndex] and forcingActionTriggered[controllerIndex][buttonAction] ~= nil then
+				local toReturn = forcingActionTriggered[controllerIndex][buttonAction]
+				forcingActionTriggered[controllerIndex][buttonAction] = nil
+				return toReturn
+			end
+		elseif inputHook == InputHook.IS_ACTION_PRESSED then
+			if forcingActionPressed[controllerIndex] and forcingActionPressed[controllerIndex][buttonAction] ~= nil then
+				local toReturn = forcingActionPressed[controllerIndex][buttonAction]
+				forcingActionPressedTimer[controllerIndex][buttonAction] = forcingActionPressedTimer[controllerIndex][buttonAction] - 1
+				if forcingActionPressedTimer[controllerIndex][buttonAction] <= 0 then
+					forcingActionPressed[controllerIndex][buttonAction] = nil
+				end
+				return toReturn
+			end
+		end
+	end
+end
+MCM.Mod:AddCallback(ModCallbacks.MC_INPUT_ACTION, MCM.HandleForceActionPressed)
 
 
 -------------------
@@ -710,8 +841,8 @@ function MCM.SimpleAddSetting(settingType, categoryName, subcategoryName, config
 				
 					key = "Unknown Key"
 					
-					if InputHelper.KeyboardToString[currentValue] then
-						key = InputHelper.KeyboardToString[currentValue]
+					if MCM.KeyboardToString[currentValue] then
+						key = MCM.KeyboardToString[currentValue]
 					end
 					
 				end
@@ -732,8 +863,8 @@ function MCM.SimpleAddSetting(settingType, categoryName, subcategoryName, config
 				
 					key = "Unknown Button"
 					
-					if InputHelper.ControllerToString[currentValue] then
-						key = InputHelper.ControllerToString[currentValue]
+					if MCM.ControllerToString[currentValue] then
+						key = MCM.ControllerToString[currentValue]
 					end
 					
 				end
@@ -798,10 +929,10 @@ function MCM.SimpleAddSetting(settingType, categoryName, subcategoryName, config
 			local goBackString = "back"
 			if MCM.Config.LastBackPressed then
 			
-				if InputHelper.KeyboardToString[MCM.Config.LastBackPressed] then
-					goBackString = InputHelper.KeyboardToString[MCM.Config.LastBackPressed]
-				elseif InputHelper.ControllerToString[MCM.Config.LastBackPressed] then
-					goBackString = InputHelper.ControllerToString[MCM.Config.LastBackPressed]
+				if MCM.KeyboardToString[MCM.Config.LastBackPressed] then
+					goBackString = MCM.KeyboardToString[MCM.Config.LastBackPressed]
+				elseif MCM.ControllerToString[MCM.Config.LastBackPressed] then
+					goBackString = MCM.ControllerToString[MCM.Config.LastBackPressed]
 				end
 				
 			end
@@ -810,10 +941,10 @@ function MCM.SimpleAddSetting(settingType, categoryName, subcategoryName, config
 			if currentValue > -1 then
 			
 				local currentSettingString = nil
-				if (settingType == MCM.OptionType.KEYBIND_KEYBOARD and InputHelper.KeyboardToString[currentValue]) then
-					currentSettingString = InputHelper.KeyboardToString[currentValue]
-				elseif (settingType == MCM.OptionType.KEYBIND_CONTROLLER and InputHelper.ControllerToString[currentValue]) then
-					currentSettingString = InputHelper.ControllerToString[currentValue]
+				if (settingType == MCM.OptionType.KEYBIND_KEYBOARD and MCM.KeyboardToString[currentValue]) then
+					currentSettingString = MCM.KeyboardToString[currentValue]
+				elseif (settingType == MCM.OptionType.KEYBIND_CONTROLLER and MCM.ControllerToString[currentValue]) then
+					currentSettingString = MCM.ControllerToString[currentValue]
 				end
 				
 				keepSettingString = "This setting is currently set to \"" .. currentSettingString .. "\".$newlinePress this button to keep it unchanged.$newline$newline"
@@ -1238,7 +1369,7 @@ MCM.AddText("General", "all mods which support them")
 
 MCM.SetCategoryInfo("Mod Config Menu", "Settings specific to Mod Config Menu.$newlineChange keybindings for the menu here.")
 
-MCM.AddTitle("Mod Config Menu", "Version " .. MCM.GetVersionString() .. " !") --VERSION INDICATOR
+MCM.AddTitle("Mod Config Menu", "Version " .. MCM.GetVersionString() .. "!") --VERSION INDICATOR
 
 MCM.AddSpace("Mod Config Menu") --SPACE
 
@@ -1670,8 +1801,8 @@ function MCM.PostRender()
 		end
 
 		local openMenuButtonString = "Unknown Key"
-		if InputHelper.KeyboardToString[openMenuButton] then
-			openMenuButtonString = InputHelper.KeyboardToString[openMenuButton]
+		if MCM.KeyboardToString[openMenuButton] then
+			openMenuButtonString = MCM.KeyboardToString[openMenuButton]
 		end
 		
 		local text = "Press " .. openMenuButtonString .. " to open Mod Config Menu"
@@ -1724,8 +1855,8 @@ function MCM.PostRender()
 	
 		for i=0, 4 do
 		
-			if InputHelper.KeyboardTriggered(openMenuGlobal, i)
-			or (openMenuKeyboard > -1 and InputHelper.KeyboardTriggered(openMenuKeyboard, i))
+			if MCM.KeyboardTriggered(openMenuGlobal, i)
+			or (openMenuKeyboard > -1 and MCM.KeyboardTriggered(openMenuKeyboard, i))
 			or (openMenuController > -1 and Input.IsButtonTriggered(openMenuController, i)) then
 				pressingNonRebindableKey = true
 				pressedToggleMenu = true
@@ -1734,7 +1865,7 @@ function MCM.PostRender()
 				end
 			end
 			
-			if InputHelper.KeyboardTriggered(takeScreenshot, i) then
+			if MCM.KeyboardTriggered(takeScreenshot, i) then
 				pressingNonRebindableKey = true
 			end
 			
@@ -1805,46 +1936,46 @@ function MCM.PostRender()
 				
 			end
 			
-			if not InputHelper.MultipleButtonTriggered(ignoreActionButtons) then
+			if not MCM.MultipleButtonTriggered(ignoreActionButtons) then
 				--pressing buttons
-				local downButtonPressed = InputHelper.MultipleActionTriggered(actionsDown)
+				local downButtonPressed = MCM.MultipleActionTriggered(actionsDown)
 				if downButtonPressed then
 					pressingButton = "DOWN"
 				end
-				local upButtonPressed = InputHelper.MultipleActionTriggered(actionsUp)
+				local upButtonPressed = MCM.MultipleActionTriggered(actionsUp)
 				if upButtonPressed then
 					pressingButton = "UP"
 				end
-				local rightButtonPressed = InputHelper.MultipleActionTriggered(actionsRight)
+				local rightButtonPressed = MCM.MultipleActionTriggered(actionsRight)
 				if rightButtonPressed then
 					pressingButton = "RIGHT"
 				end
-				local leftButtonPressed = InputHelper.MultipleActionTriggered(actionsLeft)
+				local leftButtonPressed = MCM.MultipleActionTriggered(actionsLeft)
 				if leftButtonPressed then
 					pressingButton = "LEFT"
 				end
-				local backButtonPressed = InputHelper.MultipleActionTriggered(actionsBack) or InputHelper.MultipleKeyboardTriggered({Keyboard.KEY_BACKSPACE})
+				local backButtonPressed = MCM.MultipleActionTriggered(actionsBack) or MCM.MultipleKeyboardTriggered({Keyboard.KEY_BACKSPACE})
 				if backButtonPressed then
 					pressingButton = "BACK"
-					local possiblyPressedButton = InputHelper.MultipleKeyboardTriggered(Keyboard)
+					local possiblyPressedButton = MCM.MultipleKeyboardTriggered(Keyboard)
 					if possiblyPressedButton then
 						MCM.Config.LastBackPressed = possiblyPressedButton
 					end
 				end
-				local selectButtonPressed = InputHelper.MultipleActionTriggered(actionsSelect)
+				local selectButtonPressed = MCM.MultipleActionTriggered(actionsSelect)
 				if selectButtonPressed then
 					pressingButton = "SELECT"
-					local possiblyPressedButton = InputHelper.MultipleKeyboardTriggered(Keyboard)
+					local possiblyPressedButton = MCM.MultipleKeyboardTriggered(Keyboard)
 					if possiblyPressedButton then
 						MCM.Config.LastSelectPressed = possiblyPressedButton
 					end
 				end
-				if MCM.Config["Mod Config Menu"].ResetToDefault > -1 and InputHelper.MultipleKeyboardTriggered({MCM.Config["Mod Config Menu"].ResetToDefault}) then
+				if MCM.Config["Mod Config Menu"].ResetToDefault > -1 and MCM.MultipleKeyboardTriggered({MCM.Config["Mod Config Menu"].ResetToDefault}) then
 					pressingButton = "RESET"
 				end
 				
 				--holding buttons
-				if InputHelper.MultipleActionPressed(actionsDown) then
+				if MCM.MultipleActionPressed(actionsDown) then
 					holdingCounterDown = holdingCounterDown + 1
 				else
 					holdingCounterDown = 0
@@ -1852,7 +1983,7 @@ function MCM.PostRender()
 				if holdingCounterDown > 20 and holdingCounterDown%5 == 0 then
 					pressingButton = "DOWN"
 				end
-				if InputHelper.MultipleActionPressed(actionsUp) then
+				if MCM.MultipleActionPressed(actionsUp) then
 					holdingCounterUp = holdingCounterUp + 1
 				else
 					holdingCounterUp = 0
@@ -1860,7 +1991,7 @@ function MCM.PostRender()
 				if holdingCounterUp > 20 and holdingCounterUp%5 == 0 then
 					pressingButton = "UP"
 				end
-				if InputHelper.MultipleActionPressed(actionsRight) then
+				if MCM.MultipleActionPressed(actionsRight) then
 					holdingCounterRight = holdingCounterRight + 1
 				else
 					holdingCounterRight = 0
@@ -1868,7 +1999,7 @@ function MCM.PostRender()
 				if holdingCounterRight > 20 and holdingCounterRight%5 == 0 then
 					pressingButton = "RIGHT"
 				end
-				if InputHelper.MultipleActionPressed(actionsLeft) then
+				if MCM.MultipleActionPressed(actionsLeft) then
 					holdingCounterLeft = holdingCounterLeft + 1
 				else
 					holdingCounterLeft = 0
@@ -1877,11 +2008,11 @@ function MCM.PostRender()
 					pressingButton = "LEFT"
 				end
 			else
-				if InputHelper.MultipleButtonTriggered({Controller.BUTTON_B}) then
+				if MCM.MultipleButtonTriggered({Controller.BUTTON_B}) then
 					pressingButton = "BACK"
 					pressingNonRebindableKey = true
 				end
-				if InputHelper.MultipleButtonTriggered({Controller.BUTTON_A}) then
+				if MCM.MultipleButtonTriggered({Controller.BUTTON_A}) then
 					pressingButton = "SELECT"
 					pressingNonRebindableKey = true
 				end
@@ -1947,7 +2078,7 @@ function MCM.PostRender()
 									for i=0, 4 do
 										if optionType == MCM.OptionType.KEYBIND_KEYBOARD then
 											for j=32, 400 do
-												if InputHelper.KeyboardTriggered(j, i) then
+												if MCM.KeyboardTriggered(j, i) then
 													numberToChange = j
 													recievedInput = true
 													break
@@ -3078,10 +3209,10 @@ function MCM.PostRender()
 
 			local goBackString = ""
 			if MCM.Config.LastBackPressed then
-				if InputHelper.KeyboardToString[MCM.Config.LastBackPressed] then
-					goBackString = InputHelper.KeyboardToString[MCM.Config.LastBackPressed]
-				elseif InputHelper.ControllerToString[MCM.Config.LastBackPressed] then
-					goBackString = InputHelper.ControllerToString[MCM.Config.LastBackPressed]
+				if MCM.KeyboardToString[MCM.Config.LastBackPressed] then
+					goBackString = MCM.KeyboardToString[MCM.Config.LastBackPressed]
+				elseif MCM.ControllerToString[MCM.Config.LastBackPressed] then
+					goBackString = MCM.ControllerToString[MCM.Config.LastBackPressed]
 				end
 			end
 			Font10:DrawString(goBackString, (bottomLeft.X - Font10:GetStringWidthUTF8(goBackString)/2) + 36, bottomLeft.Y - 24, mainFontColor, 0, true)
@@ -3110,10 +3241,10 @@ function MCM.PostRender()
 				
 				local selectString = ""
 				if MCM.Config.LastSelectPressed then
-					if InputHelper.KeyboardToString[MCM.Config.LastSelectPressed] then
-						selectString = InputHelper.KeyboardToString[MCM.Config.LastSelectPressed]
-					elseif InputHelper.ControllerToString[MCM.Config.LastSelectPressed] then
-						selectString = InputHelper.ControllerToString[MCM.Config.LastSelectPressed]
+					if MCM.KeyboardToString[MCM.Config.LastSelectPressed] then
+						selectString = MCM.KeyboardToString[MCM.Config.LastSelectPressed]
+					elseif MCM.ControllerToString[MCM.Config.LastSelectPressed] then
+						selectString = MCM.ControllerToString[MCM.Config.LastSelectPressed]
 					end
 				end
 				Font10:DrawString(selectString, (bottomRight.X - Font10:GetStringWidthUTF8(selectString)/2) - 36, bottomRight.Y - 24, mainFontColor, 0, true)
@@ -3354,7 +3485,7 @@ ModConfigMenuController = {}
 setmetatable(ModConfigMenuController, {
 	__index = function(this, key)
 		if Controller and Controller[key] then
-			print("ModConfigMenuController." .. key .. " is no longer used. Please update to use Controller." .. key .. " instead. This enum is added by InputHelper.")
+			print("ModConfigMenuController." .. key .. " is no longer used. Please update to use Controller." .. key .. " instead. This enum is added by MCM.")
 			return Controller[key]
 		end
 		return rawget(this, key)
@@ -3364,9 +3495,9 @@ setmetatable(ModConfigMenuController, {
 ModConfigMenuKeyboardToString = {}
 setmetatable(ModConfigMenuKeyboardToString, {
 	__index = function(this, key)
-		if InputHelper and InputHelper.KeyboardToString and InputHelper.KeyboardToString[key] then
-			print("ModConfigMenuKeyboardToString." .. key .. " is no longer used. Please update to use InputHelper.KeyboardToString." .. key .. " instead.")
-			return InputHelper.KeyboardToString[key]
+		if MCM and MCM.KeyboardToString and MCM.KeyboardToString[key] then
+			print("ModConfigMenuKeyboardToString." .. key .. " is no longer used. Please update to use MCM.KeyboardToString." .. key .. " instead.")
+			return MCM.KeyboardToString[key]
 		end
 		return rawget(this, key)
 	end
@@ -3375,9 +3506,9 @@ setmetatable(ModConfigMenuKeyboardToString, {
 ModConfigMenuControllerToString = {}
 setmetatable(ModConfigMenuControllerToString, {
 	__index = function(this, key)
-		if InputHelper and InputHelper.ControllerToString and InputHelper.ControllerToString[key] then
-			print("ModConfigMenuControllerToString." .. key .. " is no longer used. Please update to use InputHelper.ControllerToString." .. key .. " instead.")
-			return InputHelper.ControllerToString[key]
+		if MCM and MCM.ControllerToString and MCM.ControllerToString[key] then
+			print("ModConfigMenuControllerToString." .. key .. " is no longer used. Please update to use MCM.ControllerToString." .. key .. " instead.")
+			return MCM.ControllerToString[key]
 		end
 		return rawget(this, key)
 	end
@@ -3510,6 +3641,9 @@ FilepathHelper.IsDirectory = MCM.ReturnFalse
 FilepathHelper.IsAnm2 = MCM.ReturnFalse
 FilepathHelper.OldRegisterMod = Isaac.RegisterMod
 FilepathHelper.RegisterMod = Isaac.RegisterMod
+
+--Make old mods that use InputHelper still kinda work
+InputHelper = MCM
 
 ------------
 --FINISHED--
