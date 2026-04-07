@@ -1193,9 +1193,11 @@ end
 --------------------------
 --GENERAL SETTINGS SETUP--
 --------------------------
---if not Options then
+if Options then
+	MCM.Config["General"] = {}
+else
 	MCM.SetCategoryInfo("General", "Settings that affect the majority of mods")
---end
+end
 
 --------------
 --HUD OFFSET--
@@ -1267,7 +1269,9 @@ function MCM.GetScreenTopLeft(offset)
 	return pos
 end
 
-if not Options then
+if Options then
+	MCM.Config["General"].HudOffset = MCM.GetOffset()
+else
 	local hudOffsetSetting = MCM.AddScrollSetting(
 		"General", --category
 		"HudOffset", --attribute in table
@@ -1285,82 +1289,93 @@ if not Options then
 	end
 end
 
-
 --------------------
 --OVERLAYS SETTING--
 --------------------
-MCM.AddBooleanSetting(
-	"General", --category
-	"Overlays", --attribute in table
-	true, --default value
-	"Overlays", --display text
-	{ --value display text
-		[true] = "On",
-		[false] = "Off"
-	},
-	"Enable or disable custom visual overlays, like screen-wide fog."
-)
-
+if Options then
+	MCM.Config["General"].Overlays = true
+else
+	MCM.AddBooleanSetting(
+		"General", --category
+		"Overlays", --attribute in table
+		true, --default value
+		"Overlays", --display text
+		{ --value display text
+			[true] = "On",
+			[false] = "Off"
+		},
+		"Enable or disable custom visual overlays, like screen-wide fog."
+	)
+end
 
 -----------------------
 --CHARGE BARS SETTING--
 -----------------------
-MCM.AddBooleanSetting(
-	"General", --category
-	"ChargeBars", --attribute in table
-	false, --default value
-	"Charge Bars", --display text
-	{ --value display text
-		[true] = "On",
-		[false] = "Off"
-	},
-	"Enable or disable custom charge bar visuals for mod effects, like those from chargable items."
-)
-
+if Options then
+	MCM.Config["General"].ChargeBars = Options.ChargeBars
+else
+	MCM.AddBooleanSetting(
+		"General", --category
+		"ChargeBars", --attribute in table
+		false, --default value
+		"Charge Bars", --display text
+		{ --value display text
+			[true] = "On",
+			[false] = "Off"
+		},
+		"Enable or disable custom charge bar visuals for mod effects, like those from chargable items."
+	)
+end
 
 ---------------------
 --BIG BOOKS SETTING--
 ---------------------
-MCM.AddBooleanSetting(
-	"General", --category
-	"BigBooks", --attribute in table
-	true, --default value
-	"Bigbooks", --display text
-	{ --value display text
-		[true] = "On",
-		[false] = "Off"
-	},
-	"Enable or disable custom bigbook overlays which can appear when an active item is used."
-)
-
+if Options then
+	MCM.Config["General"].BigBooks = true
+else
+	MCM.AddBooleanSetting(
+		"General", --category
+		"BigBooks", --attribute in table
+		true, --default value
+		"Bigbooks", --display text
+		{ --value display text
+			[true] = "On",
+			[false] = "Off"
+		},
+		"Enable or disable custom bigbook overlays which can appear when an active item is used."
+	)
+end
 
 ---------------------
 --ANNOUNCER SETTING--
 ---------------------
-MCM.AddNumberSetting(
-	"General", --category
-	"Announcer", --attribute in table
-	0, --minimum value
-	2, --max value
-	0, --default value,
-	"Announcer", --display text
-	{ --value display text
-		[0] = "Sometimes",
-		[1] = "Never",
-		[2] = "Always"
-	},
-	"Choose how often a voice-over will play when a pocket item (pill or card) is used."
-)
-
+if Options then
+	MCM.Config["General"].Announcer = Options.AnnouncerVoiceMode
+else
+	MCM.AddNumberSetting(
+		"General", --category
+		"Announcer", --attribute in table
+		0, --minimum value
+		2, --max value
+		0, --default value,
+		"Announcer", --display text
+		{ --value display text
+			[0] = "Sometimes",
+			[1] = "Never",
+			[2] = "Always"
+		},
+		"Choose how often a voice-over will play when a pocket item (pill or card) is used."
+	)
+end
 
 --------------------------
 --GENERAL SETTINGS CLOSE--
 --------------------------
-
-MCM.AddSpace("General") --SPACE
-
-MCM.AddText("General", "These settings apply to")
-MCM.AddText("General", "all mods which support them")
+if not Options then
+	MCM.AddSpace("General") --SPACE
+	MCM.AddText("General", "These settings apply to")
+	MCM.AddText("General", "all mods which support them")
+end
 
 
 ----------------------------------
