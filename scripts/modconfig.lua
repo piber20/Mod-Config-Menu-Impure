@@ -100,11 +100,6 @@ end
 
 local json = require("json")
 
---load filepath helper
-if not FilepathHelper then
-	exec("scripts.filepathhelper")
-end
-
 --load other scripts
 if not CustomCallbackHelper then
 	exec("scripts.customcallbacks")
