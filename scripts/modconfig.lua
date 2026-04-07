@@ -272,11 +272,12 @@ MCM.Mod:AddCallback(ModCallbacks.MC_POST_UPDATE, MCM.PostUpdate)
 ------------------------------------
 --set up the menu sprites and font--
 ------------------------------------
-function MCM.GetMenuAnm2Sprite(animation, frame, color)
+function MCM.GetMenuAnm2Sprite(animation, frame, color, anm2)
 
+	anm2 = anm2 or "gfx/ui/modconfig/menu.anm2"
 	local sprite = Sprite()
 	
-	sprite:Load("gfx/ui/modconfig/menu.anm2", true)
+	sprite:Load(anm2, true)
 	sprite:SetFrame(animation or "Idle", frame or 0)
 	
 	if color then
@@ -1343,6 +1344,7 @@ MCM.AddBooleanSetting(
 	"Disable this to remove the back and select widgets at the lower corners of the screen and remove the bottom start-up message."
 )
 
+--[[
 MCM.AddSpace("Mod Config Menu") --SPACE
 
 
@@ -1361,6 +1363,7 @@ local compatibilitySetting = MCM.AddBooleanSetting(
 	"Use this setting to prevent warnings from being printed to the console for mods that use outdated features of Mod Config Menu."
 )
 -- compatibilitySetting.Restart = true
+]]
 
 local configMenuSubcategoriesCanShow = 3
 
@@ -3263,6 +3266,17 @@ FilepathHelper.IsDirectory = MCM.ReturnFalse
 FilepathHelper.IsAnm2 = MCM.ReturnFalse
 FilepathHelper.OldRegisterMod = Isaac.RegisterMod
 FilepathHelper.RegisterMod = Isaac.RegisterMod
+
+if not MCM.oldpcall then
+	MCM.oldpcall = pcall
+	function MCM.pcall(func, path, ...)
+		if path == "scripts.modconfig" then
+			return true, MCM
+		end
+		return MCM.oldpcall(func, path, ...)
+	end
+	pcall = MCM.pcall
+end
 
 ------------
 --FINISHED--
