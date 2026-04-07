@@ -17,19 +17,15 @@ If you still have issues even after doing all this, please create an issue in th
 
 ## Navigation
 
-
 Keyboard:
-Use the arrow keys or WASD keys to navigate
-
-Esc, backspace, or Q can be used to go back
-
-E, space, or enter can be used to select an item.
-
-By default you can open the menu by pressing L.
-
-F10 will also always open the menu, this cannot be changed.
+- Use the arrow keys or WASD keys to navigate the menu.
+- Esc, backspace, or Q can be used to go back.
+- E, space, or enter can be used to select an item.
+- By default you can open the menu by pressing L.
+- F10 will also always open the menu, this cannot be changed.
 
 Controller:
-Both control sticks can be used to navigate the menu, press B to go back, A to select an item.
-
-By default you can open the menu by pressing down the right control stick.
+- Both control sticks can be used to navigate the menu.
+- Press B to go back.
+- Press A to select an item.
+- By default you can open the menu by pressing down the right control stick.
