@@ -14,8 +14,8 @@ exec("scripts.savehelper")
 --create the mod
 local mod = RegisterMod("Mod Config Menu (Standalone)", 1)
 
-ModConfigMenu = ModConfigMenu or {}
-ModConfigMenu.StandaloneMod = mod
+MCM = MCM or {}
+MCM.StandaloneMod = mod
 
 --add MCM's save to savehelper
 SaveHelper.AddMod(mod)
@@ -26,25 +26,21 @@ SaveHelper.DefaultGameSave(mod, {
 --get and apply the mcm save when savehelper saves and loads data
 mod:AddCustomCallback(CustomCallbacks.SH_PRE_MOD_SAVE, function(_, modRef, saveData)
 
-	local mcmSave = ModConfigMenu.GetSave()
+	local mcmSave = MCM.GetSave()
 	saveData.ModConfigSave = mcmSave
 	
 end, mod.Name)
 
 mod:AddCustomCallback(CustomCallbacks.SH_POST_MOD_LOAD, function(_, modRef, saveData)
 
-	local mcmSave = ModConfigMenu.LoadSave(saveData.ModConfigSave)
+	local mcmSave = MCM.LoadSave(saveData.ModConfigSave)
 	
 end, mod.Name)
 
 --load mod config menu
 exec("scripts.modconfig")
 
-if not ModConfigMenu.StandaloneSaveLoaded then
-	SaveHelper.Load(ModConfigMenu.StandaloneMod)
-	ModConfigMenu.StandaloneSaveLoaded = true
-end
-
-if not ModConfigMenu.CompatibilityMode then
-	exec("scripts.modconfigoldcompatibility")
+if not MCM.StandaloneSaveLoaded then
+	SaveHelper.Load(MCM.StandaloneMod)
+	MCM.StandaloneSaveLoaded = true
 end

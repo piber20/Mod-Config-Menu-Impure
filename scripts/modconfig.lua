@@ -3221,13 +3221,8 @@ if MCM.StandaloneMod then
 		SaveHelper.Load(MCM.StandaloneMod)
 		MCM.StandaloneSaveLoaded = true
 	end
-	
-	if not MCM.CompatibilityMode then
-		exec("scripts/modconfigoldcompatibility")
-	end
 
 end
-
 
 -----------------
 --LEGACY COMPAT--
@@ -3238,7 +3233,228 @@ end
 function MCM.ReturnFalse()
 	return false
 end
+
+--Make old mods that use old versions of Mod Config Menu still kinda work
+MCM.CompatibilityMode = true
+local cachedVectorsAndColors = {
+	["VECTOR_ZERO"] = Vector(0,0),
+	["VECTOR_ONE"] = Vector(1,1),
+	["VECTOR_LEFT"] = Vector(-1,0),
+	["VECTOR_UP"] = Vector(0,-1),
+	["VECTOR_RIGHT"] = Vector(1,0),
+	["VECTOR_DOWN"] = Vector(0,1),
+	["VECTOR_UP_LEFT"] = Vector(-1,-1),
+	["VECTOR_UP_RIGHT"] = Vector(1,-1),
+	["VECTOR_DOWN_LEFT"] = Vector(-1,1),
+	["VECTOR_DOWN_RIGHT"] = Vector(1,1),
+	["COLOR_DEFAULT"] = Color(1,1,1,1,0,0,0),
+	["COLOR_HALF"] = Color(1,1,1,0.5,0,0,0),
+	["COLOR_INVISIBLE"] = Color(1,1,1,0,0,0,0),
+	["KCOLOR_DEFAULT"] = KColor(1,1,1,1),
+	["KCOLOR_HALF"] = KColor(1,1,1,0.5),
+	["KCOLOR_INVISIBLE"] = KColor(1,1,1,0)
+}
+local fakeCachedDataToReturn = {
+	Game = Game,
+	Seeds = function() return Game():GetSeeds() end,
+	Level = function() return Game():GetLevel() end,
+	Room = function() return Game():GetRoom() end,
+	SFX = SFXManager
+}
+setmetatable(MCM, {
+	__index = function(this, key)
+		if fakeCachedDataToReturn[key] then
+			print("MCM." .. key .. " is no longer used. Please update.")
+			return fakeCachedDataToReturn[key]()
+		end
+		if cachedVectorsAndColors[key] then
+			print("MCM." .. key .. " is no longer used. Please update.")
+			return cachedVectorsAndColors[key]
+		end
+	end
+})
+
+local fakeConfigDefaultToReturn = {
+	HudOffset = function() return MCM.ConfigDefault["General"].HudOffset end,
+	Overlays = function() return MCM.ConfigDefault["General"].Overlays end,
+	ChargeBars = function() return MCM.ConfigDefault["General"].ChargeBars end,
+	BigBooks = function() return MCM.ConfigDefault["General"].BigBooks end,
+}
+setmetatable(MCM.ConfigDefault, {
+	__index = function(this, key)
+		if fakeConfigDefaultToReturn[key] then
+			print("MCM.ConfigDefault." .. key .. " is no longer used. Please update to use MCM.ConfigDefault.[\"General\"]." .. key .. " instead.")
+			return fakeConfigDefaultToReturn[key]()
+		end
+		return rawget(this, key)
+	end,
+	__newindex = function(this, key, value)
+		if fakeConfigDefaultToReturn[key] then
+			print("MCM.ConfigDefault." .. key .. " is no longer used. Please update to use MCM.ConfigDefault.[\"General\"]." .. key .. " instead.")
+			rawset(this["General"], key, value)
+		else
+			rawset(this, key, value)
+		end
+	end
+})
+
+local fakeConfigToReturn = {
+	HudOffset = function() return MCM.Config["General"].HudOffset end,
+	Overlays = function() return MCM.Config["General"].Overlays end,
+	ChargeBars = function() return MCM.Config["General"].ChargeBars end,
+	BigBooks = function() return MCM.Config["General"].BigBooks end,
+}
+setmetatable(MCM.Config, {
+	__index = function(this, key)
+		if fakeConfigToReturn[key] then
+			print("MCM.Config." .. key .. " is no longer used. Please update to use MCM.Config.[\"General\"]." .. key .. " instead.")
+			return fakeConfigToReturn[key]()
+		end
+		return rawget(this, key)
+	end,
+	__newindex = function(this, key, value)
+		if fakeConfigDefaultToReturn[key] then
+			print("MCM.Config." .. key .. " is no longer used. Please update to use MCM.Config.[\"General\"]." .. key .. " instead.")
+			rawset(this["General"], key, value)
+		else
+			rawset(this, key, value)
+		end
+	end
+})
+
+ModConfigMenuController = {}
+setmetatable(ModConfigMenuController, {
+	__index = function(this, key)
+		if Controller and Controller[key] then
+			print("ModConfigMenuController." .. key .. " is no longer used. Please update to use Controller." .. key .. " instead. This enum is added by InputHelper.")
+			return Controller[key]
+		end
+		return rawget(this, key)
+	end
+})
+
+ModConfigMenuKeyboardToString = {}
+setmetatable(ModConfigMenuKeyboardToString, {
+	__index = function(this, key)
+		if InputHelper and InputHelper.KeyboardToString and InputHelper.KeyboardToString[key] then
+			print("ModConfigMenuKeyboardToString." .. key .. " is no longer used. Please update to use InputHelper.KeyboardToString." .. key .. " instead.")
+			return InputHelper.KeyboardToString[key]
+		end
+		return rawget(this, key)
+	end
+})
+
+ModConfigMenuControllerToString = {}
+setmetatable(ModConfigMenuControllerToString, {
+	__index = function(this, key)
+		if InputHelper and InputHelper.ControllerToString and InputHelper.ControllerToString[key] then
+			print("ModConfigMenuControllerToString." .. key .. " is no longer used. Please update to use InputHelper.ControllerToString." .. key .. " instead.")
+			return InputHelper.ControllerToString[key]
+		end
+		return rawget(this, key)
+	end
+})
+
+ModConfigMenuPopupGfx = {}
+setmetatable(ModConfigMenuPopupGfx, {
+	__index = function(this, key)
+		if MCM.PopupGfx[key] then
+			print("ModConfigMenuPopupGfx." .. key .. " is no longer used. Please update to use MCM.PopupGfx." .. key .. " instead.")
+			return MCM.PopupGfx[key]
+		end
+		return rawget(this, key)
+	end
+})
+
+ModConfigMenuOptionType = {}
+setmetatable(ModConfigMenuOptionType, {
+	__index = function(this, key)
+		if MCM.OptionType[key] then
+			print("ModConfigMenuOptionType." .. key .. " is no longer used. Please update to use MCM.OptionType." .. key .. " instead.")
+			return MCM.OptionType[key]
+		end
+		return rawget(this, key)
+	end
+})
+
+ModConfigMenuData = MCM.MenuData
+CustomCallbackHelper.Callbacks = CustomCallbackHelper.Callbacks or {}
+CustomCallbackHelper.Callbacks.MCM_POST_MODIFY_HUD_OFFSET = 4300
+MCM.Mod:AddCustomCallback(CustomCallbacks.CCH_PRE_ADD_CUSTOM_CALLBACK, function(mod, modRef, callbackId, fn, args)
+	print("CallbackHelper.Callbacks.MCM_POST_MODIFY_HUD_OFFSET is no longer used. Please update to use CustomCallbacks.MCM_POST_MODIFY_SETTING with extra variables \"General\" and \"HudOffset\".")
+	modRef:AddCustomCallback(CustomCallbacks.MCM_POST_MODIFY_SETTING, function(modRef, settingTable, currentSetting)
+		fn(modRef, currentSetting)
+	end, "General", "HudOffset")
+	return false
+end, CustomCallbackHelper.Callbacks.MCM_POST_MODIFY_HUD_OFFSET)
+
+CustomCallbackHelper.Callbacks.MCM_POST_MODIFY_OVERLAYS = 4301
+MCM.Mod:AddCustomCallback(CustomCallbacks.CCH_PRE_ADD_CUSTOM_CALLBACK, function(mod, modRef, callbackId, fn, args)
+	print("CallbackHelper.Callbacks.MCM_POST_MODIFY_HUD_OFFSET is no longer used. Please update to use CustomCallbacks.MCM_POST_MODIFY_SETTING with extra variables \"General\" and \"Overlays\".")
+	modRef:AddCustomCallback(CustomCallbacks.MCM_POST_MODIFY_SETTING, function(modRef, settingTable, currentSetting)
+		fn(modRef, currentSetting)
+	end, "General", "Overlays")
+	return false
+
+end, CustomCallbackHelper.Callbacks.MCM_POST_MODIFY_OVERLAYS)
+
+CustomCallbackHelper.Callbacks.MCM_POST_MODIFY_CHARGE_BARS = 4302
+MCM.Mod:AddCustomCallback(CustomCallbacks.CCH_PRE_ADD_CUSTOM_CALLBACK, function(mod, modRef, callbackId, fn, args)
+	print("CallbackHelper.Callbacks.MCM_POST_MODIFY_HUD_OFFSET is no longer used. Please update to use CustomCallbacks.MCM_POST_MODIFY_SETTING with extra variables \"General\" and \"ChargeBars\".")
+	modRef:AddCustomCallback(CustomCallbacks.MCM_POST_MODIFY_SETTING, function(modRef, settingTable, currentSetting)
+		fn(modRef, currentSetting)
+	end, "General", "ChargeBars")
+	return false
+end, CustomCallbackHelper.Callbacks.MCM_POST_MODIFY_CHARGE_BARS)
+
+CustomCallbackHelper.Callbacks.MCM_POST_MODIFY_BIG_BOOKS = 4303
+MCM.Mod:AddCustomCallback(CustomCallbacks.CCH_PRE_ADD_CUSTOM_CALLBACK, function(mod, modRef, callbackId, fn, args)
+	print("CallbackHelper.Callbacks.MCM_POST_MODIFY_HUD_OFFSET is no longer used. Please update to use CustomCallbacks.MCM_POST_MODIFY_SETTING with extra variables \"General\" and \"BigBooks\".")
+	modRef:AddCustomCallback(CustomCallbacks.MCM_POST_MODIFY_SETTING, function(modRef, settingTable, currentSetting)
+		fn(modRef, currentSetting)
+	end, "General", "BigBooks")
+	return false
+end, CustomCallbackHelper.Callbacks.MCM_POST_MODIFY_BIG_BOOKS)
+
+MCM.AddHudOffsetChangeCallback = function(functionToAdd)
+	print("MCM.AddHudOffsetChangeCallback is no longer used. Please update to use mod:AddCustomCallback added by CustomCallbackHelper using CustomCallbacks.MCM_POST_MODIFY_SETTING with extra variables \"General\" and \"HudOffset\".")
+	MCM.Mod:AddCustomCallback(CustomCallbacks.MCM_POST_MODIFY_SETTING, function(modRef, settingTable, currentSetting)
+		functionToAdd(currentSetting)
+	end, "General", "HudOffset")
+end
+
+MCM.AddOverlayChangeCallback = function(functionToAdd)
+	print("MCM.AddOverlayChangeCallback is no longer used. Please update to use mod:AddCustomCallback added by CustomCallbackHelper using CustomCallbacks.MCM_POST_MODIFY_SETTING with extra variables \"General\" and \"Overlays\".")
+	MCM.Mod:AddCustomCallback(CustomCallbacks.MCM_POST_MODIFY_SETTING, function(modRef, settingTable, currentSetting)
+		functionToAdd(currentSetting)
+	end, "General", "Overlays")
+end
+
+MCM.AddChargeBarChangeCallback = function(functionToAdd)
+	print("MCM.AddChargeBarChangeCallback is no longer used. Please update to use mod:AddCustomCallback added by CustomCallbackHelper using CustomCallbacks.MCM_POST_MODIFY_SETTING with extra variables \"General\" and \"ChargeBars\".")
+	MCM.Mod:AddCustomCallback(CustomCallbacks.MCM_POST_MODIFY_SETTING, function(modRef, settingTable, currentSetting)
+		functionToAdd(currentSetting)
+	end, "General", "ChargeBars")
+end
+
+MCM.AddBigBookChangeCallback = function(functionToAdd)
+	print("MCM.AddBigBookChangeCallback is no longer used. Please update to use mod:AddCustomCallback added by CustomCallbackHelper using CustomCallbacks.MCM_POST_MODIFY_SETTING with extra variables \"General\" and \"BigBooks\".")
+	MCM.Mod:AddCustomCallback(CustomCallbacks.MCM_POST_MODIFY_SETTING, function(modRef, settingTable, currentSetting)
+		functionToAdd(currentSetting)
+	end, "General", "BigBooks")
+end
+
 ModConfigMenu = MCM
+if not MCM.oldpcall then
+	MCM.oldpcall = pcall
+	function MCM.pcall(func, path, ...)
+		if path == "scripts.modconfig" then
+			return true, MCM
+		end
+		return MCM.oldpcall(func, path, ...)
+	end
+	pcall = MCM.pcall
+end
 
 --Make old mods that use ScreenHelper still kinda work
 ScreenHelper = MCM
@@ -3266,17 +3482,6 @@ FilepathHelper.IsDirectory = MCM.ReturnFalse
 FilepathHelper.IsAnm2 = MCM.ReturnFalse
 FilepathHelper.OldRegisterMod = Isaac.RegisterMod
 FilepathHelper.RegisterMod = Isaac.RegisterMod
-
-if not MCM.oldpcall then
-	MCM.oldpcall = pcall
-	function MCM.pcall(func, path, ...)
-		if path == "scripts.modconfig" then
-			return true, MCM
-		end
-		return MCM.oldpcall(func, path, ...)
-	end
-	pcall = MCM.pcall
-end
 
 ------------
 --FINISHED--
