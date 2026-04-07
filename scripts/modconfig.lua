@@ -522,7 +522,7 @@ function MCM.DrawFont(font, string, posx, posy, color, width, center)
 	if MCM.DLC >= 3 then
 		font:DrawStringUTF8(string, posx, posy, color, width, center)
 	else
-		MCM.DrawFont(font, string, posx, posy, color, width, center)
+		font:DrawString(string, posx, posy, color, width, center)
 	end
 end
 
