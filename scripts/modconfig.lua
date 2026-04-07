@@ -1368,7 +1368,7 @@ else
 			[true] = "On",
 			[false] = "Off"
 		},
-		"Enable or disable custom charge bar visuals for mod effects, like those from chargable items."
+		"Enable or disable custom charge bar visuals for mod effects, like those from chargeable items."
 	)
 end
 
@@ -1387,7 +1387,7 @@ else
 			[true] = "On",
 			[false] = "Off"
 		},
-		"Enable or disable custom bigbook overlays which can appear when an active item is used."
+		"Enable or disable custom overlay animations which appear when some active items are used."
 	)
 end
 
@@ -1409,7 +1409,7 @@ else
 			[1] = "Never",
 			[2] = "Always"
 		},
-		"Choose how often a voice-over will play when a pocket item (pill or card) is used."
+		"Choose how often custom voice-overs play when pills or cards are used."
 	)
 end
 
@@ -2134,7 +2134,7 @@ function MCM.PostRender()
 							sfx:Play(SoundEffect.SOUND_BOSS2INTRO_ERRORBUZZ, 0.75, 0, false, 1)
 						else
 							local numberToChange = nil
-							local recievedInput = false
+							local receivedInput = false
 							if optionType == MCM.OptionType.KEYBIND_KEYBOARD or optionType == MCM.OptionType.KEYBIND_CONTROLLER then
 								numberToChange = optionCurrent
 								
@@ -2144,14 +2144,14 @@ function MCM.PostRender()
 								
 								if pressingButton == "BACK" or pressingButton == "LEFT" then
 									numberToChange = nil
-									recievedInput = true
+									receivedInput = true
 								else
 									for i=0, 4 do
 										if optionType == MCM.OptionType.KEYBIND_KEYBOARD then
 											for j=32, 400 do
 												if MCM.KeyboardTriggered(j, i) then
 													numberToChange = j
-													recievedInput = true
+													receivedInput = true
 													break
 												end
 											end
@@ -2159,7 +2159,7 @@ function MCM.PostRender()
 											for j=0, 31 do
 												if Input.IsButtonTriggered(j, i) then
 													numberToChange = j
-													recievedInput = true
+													receivedInput = true
 													break
 												end
 											end
@@ -2168,15 +2168,15 @@ function MCM.PostRender()
 								end
 							elseif currentMenuOption.OnSelect then
 								if pressingButton == "BACK" or pressingButton == "LEFT" then
-									recievedInput = true
+									receivedInput = true
 								end
 								if pressingButton == "SELECT" or pressingButton == "RIGHT" then
 									numberToChange = true
-									recievedInput = true
+									receivedInput = true
 								end
 							end
 							
-							if recievedInput then
+							if receivedInput then
 								if optionType == MCM.OptionType.KEYBIND_KEYBOARD or optionType == MCM.OptionType.KEYBIND_CONTROLLER then
 								
 									if type(optionCurrent) == "function" then
@@ -2923,11 +2923,11 @@ function MCM.PostRender()
 							if renderedSubcategories >= configMenuSubcategoriesCanShow then --if this is the last one we should render
 							
 								--render scroll arrows
-								if configMenuPositionFirstSubcategory > 1 then --if the first one we rendered wasnt the first in the list
+								if configMenuPositionFirstSubcategory > 1 then --if the first one we rendered wasn't the first in the list
 									SubcategoryCursorSpriteLeft:Render(lastOptionPos + Vector(-125,0), vecZero, vecZero)
 								end
 								
-								if subcategoryIndex < #currentMenuCategory.Subcategories then --if this isnt the last thing
+								if subcategoryIndex < #currentMenuCategory.Subcategories then --if this isn't the last thing
 									SubcategoryCursorSpriteRight:Render(lastOptionPos + Vector(125,0), vecZero, vecZero)
 								end
 								
