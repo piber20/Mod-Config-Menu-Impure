@@ -309,7 +309,7 @@ MCM.SetConfigMetatables = MCM.SetConfigMetatables or function() end
 
 MCM.ConfigDefault = MCM.ConfigDefault or {}
 MCM.FillTable(MCM.ConfigDefault,{
-	
+
 	--last button pressed tracker
 	LastBackPressed = Keyboard.KEY_ESCAPE,
 	LastSelectPressed = Keyboard.KEY_ENTER
@@ -403,8 +403,8 @@ function MCM.PostGameStarted()
 
 	if MCM.Config["Mod Config Menu"].ShowControls and isFirstRun then
 		versionPrintTimer = 120
-		isFirstRun = false
 	end
+	isFirstRun = false
 	
 	MCM.IsVisible = false
 	
