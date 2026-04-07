@@ -3100,7 +3100,7 @@ function MCM.PostRender()
 						end
 						
 						local showStrikeout = thisOption.ShowStrikeout
-						if posOffset > 0 and (type(showStrikeout) == boolean and showStrikeout == true) or (type(showStrikeout) == "function" and showStrikeout() == true) then
+						if posOffset > 0 and (type(showStrikeout) == "boolean" and showStrikeout == true) or (type(showStrikeout) == "function" and showStrikeout() == true) then
 							if configMenuInOptions then
 								StrikeOutSprite.Color = colorDefault
 							else
