@@ -32,7 +32,14 @@ Controller:
 - Both control sticks can be used to navigate the menu.
 - Press B to go back.
 - Press A to select an item.
-- By default you can open the menu by pressing down the right control stick.</description>
+- By default you can open the menu by pressing down the right control stick.
+
+
+Love what I do?
+[url=http://paypal.me/pibergames]Donate to me on PayPal[/url], [url=https://ko-fi.com/piber20]or tip me on Ko-fi[/url]!
+
+Enjoy my mods?
+I have a discord server! discord.gg/DbYcutKuHV</description>
     <version>1.2</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
