@@ -1860,8 +1860,8 @@ function MCM.PostRender()
 	local pressedToggleMenu = false
 
 	local openMenuGlobal = Keyboard.KEY_F10
-	local openMenuKeyboard = MCM.Config["Mod Config Menu"].OpenMenuKeyboard or -1
-	local openMenuController = MCM.Config["Mod Config Menu"].OpenMenuController or -1
+	local openMenuKeyboard = MCM.Config["Mod Config Menu"].OpenMenuKeyboard or Keyboard.KEY_L
+	local openMenuController = MCM.Config["Mod Config Menu"].OpenMenuController or Controller.STICK_RIGHT
 	
 	local takeScreenshot = Keyboard.KEY_F12
 
