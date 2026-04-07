@@ -83,71 +83,52 @@ end
 
 local vecZero = Vector(0,0)
 
---load some lua scripts
+---------------
+-- Libraries --
+---------------
+-- Function that makes it easy to load scripts regardless of DLC
+function MCM.Exec(path)
+	if type(include) == "function" then
+		return include(path) --repentance
+	else
+		return require(path) --afterbirth+
+	end
+end
+local function exec(path)
+	return MCM.Exec(path)
+end
+
 local json = require("json")
 
 --load filepath helper
 if not FilepathHelper then
-
-	pcall(require, "scripts.filepathhelper")
-	
-	if FilepathHelper then
-		pcall(dofile, "scripts/filepathhelper")
-	end
-	
+	exec("scripts.filepathhelper")
 end
 
 --load other scripts
 if not CustomCallbackHelper then
-
-	pcall(require, "scripts.customcallbacks")
-	
-	if FilepathHelper then
-		pcall(dofile, "scripts/customcallbacks")
-	end
-	
+	exec("scripts.customcallbacks")
 end
 
 if not InputHelper then
-
-	pcall(require, "scripts.inputhelper")
-	
-	if FilepathHelper then
-		pcall(dofile, "scripts/inputhelper")
-	end
-	
+	exec("scripts.inputhelper")
 	if not InputHelper then
 		error("Mod Config Menu requires Input Helper to function", 2)
 	end
-	
 end
 
 if not ScreenHelper then
-
-	pcall(require, "scripts.screenhelper")
-	
-	if FilepathHelper then
-		pcall(dofile, "scripts/screenhelper")
-	end
-	
+	exec("scripts.screenhelper")
 	if not ScreenHelper then
 		error("Mod Config Menu requires Screen Helper to function", 2)
 	end
-	
 end
 
 if not SaveHelper then
-
-	pcall(require, "scripts.savehelper")
-	
-	if FilepathHelper then
-		pcall(dofile, "scripts/savehelper")
-	end
-	
+	exec("scripts.savehelper")
 	if not SaveHelper then
 		error("Mod Config Menu requires Save Helper to function", 2)
 	end
-	
 end
 
 --create the mod
@@ -3184,14 +3165,6 @@ function MCM.ExecuteCmd(_, command, args)
 	
 end
 MCM.Mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, MCM.ExecuteCmd)
-
-local function exec(path)
-	if type(include) == "function" then -- trick to try to detect if we're on repentance
-		include(path)
-	else -- if not then we're in afterbirth plus
-		require(path)
-	end
-end
 
 if MCM.StandaloneMod then
 

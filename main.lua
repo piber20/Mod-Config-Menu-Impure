@@ -1,11 +1,9 @@
---this script handles saving for the standalone version of mod config menu
-
---load some scripts
+-- Function that makes it easy to load scripts regardless of DLC
 local function exec(path)
-	if type(include) == "function" then -- trick to try to detect if we're on repentance
-		include(path)
-	else -- if not then we're in afterbirth plus
-		require(path)
+	if type(include) == "function" then
+		return include(path) --repentance
+	else
+		return require(path) --afterbirth+
 	end
 end
 
@@ -14,7 +12,7 @@ exec("scripts.customcallbacks")
 exec("scripts.savehelper")
 
 --create the mod
-local mod = RegisterMod("Mod Config Menu Standalone", 1)
+local mod = RegisterMod("Mod Config Menu (Standalone)", 1)
 
 ModConfigMenu = ModConfigMenu or {}
 ModConfigMenu.StandaloneMod = mod
