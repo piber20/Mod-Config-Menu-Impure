@@ -1890,12 +1890,16 @@ function MCM.PostRender()
 		if DeadSeaScrollsMenu then
 			local level = game:GetLevel()
 			local isDSSTextDisplayed = level:GetStage() == LevelStage.STAGE1_1 and
-				level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and game:GetRoom():IsFirstVisit() and
-				level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE and
-				level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE_B and
-				not game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH) and
+				level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and
+				game:GetRoom():IsFirstVisit() and
 				not DeadSeaScrollsMenu.IsOpen() and
 				DeadSeaScrollsMenu.GetMenuHintSetting() == 1
+			if REPENTANCE then
+				isDSSTextDisplayed = isDSSTextDisplayed and
+					level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE and
+					level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE_B and
+					not game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH)
+			end
 			if isDSSTextDisplayed then
 				warnOffset = MCM.WarningOffsetDSS
 			end
@@ -1915,12 +1919,16 @@ function MCM.PostRender()
 		if DeadSeaScrollsMenu then
 			local level = game:GetLevel()
 			local isDSSTextDisplayed = level:GetStage() == LevelStage.STAGE1_1 and
-				level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and game:GetRoom():IsFirstVisit() and
-				level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE and
-				level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE_B and
-				not game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH) and
+				level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and
+				game:GetRoom():IsFirstVisit() and
 				not DeadSeaScrollsMenu.IsOpen() and
 				DeadSeaScrollsMenu.GetMenuHintSetting() == 1
+			if REPENTANCE then
+				isDSSTextDisplayed = isDSSTextDisplayed and
+					level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE and
+					level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE_B and
+					not game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH)
+			end
 			if isDSSTextDisplayed then
 				warnOffset = MCM.WarningOffsetDSS
 			end
