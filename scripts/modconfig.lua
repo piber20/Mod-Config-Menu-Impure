@@ -6,66 +6,63 @@
 -- We'll start with 200 and increment
 local fileVersion = 200
 
---prevent older/same version versions of this script from loading
-if ModConfigMenu and ModConfigMenu.Version and ModConfigMenu.Version >= fileVersion then
-
-	return ModConfigMenu
-
+-- Prevent older/same version versions of this script from loading
+if MCM and MCM.Version and MCM.Version >= fileVersion then
+	return MCM
 end
 
-if not ModConfigMenu then
+-- Handle old versions
+if (ModConfigMenu and not MCM) or (MCM and MCM.Version and MCM.Version < fileVersion) then
+	if not MCM then
+		MCM = ModConfigMenu
+	end
 
-	ModConfigMenu = {}
-	
-elseif ModConfigMenu.Version and ModConfigMenu.Version < fileVersion then
-
-	local oldVersion = ModConfigMenu.Version
-	
-	--handle old versions
-	if ModConfigMenu.MenuData then
-	
-		for i=#ModConfigMenu.MenuData, 1, -1 do
-		
-			if ModConfigMenu.MenuData[i].Name == "General" or ModConfigMenu.MenuData[i].Name == "Mod Config Menu" then
-				ModConfigMenu.MenuData[i] = nil
+	if MCM.MenuData then
+		for i=#MCM.MenuData, 1, -1 do
+			if MCM.MenuData[i].Name == "General" or MCM.MenuData[i].Name == "Mod Config Menu" then
+				MCM.MenuData[i] = nil
 			end
-			
 		end
-		
 	end
 	
-	if ModConfigMenu.PostGameStarted then
-		if ModConfigMenu.Mod.RemoveCustomCallback then
-			ModConfigMenu.Mod:RemoveCustomCallback(CustomCallbacks.CCH_GAME_STARTED, ModConfigMenu.PostGameStarted)
+	if MCM.PostGameStarted then
+		if MCM.Mod.RemoveCustomCallback then
+			MCM.Mod:RemoveCustomCallback(CustomCallbacks.CCH_GAME_STARTED, MCM.PostGameStarted)
 		else
-			ModConfigMenu.Mod.RemoveCallback(ModCallbacks.MC_POST_GAME_STARTED, ModConfigMenu.PostGameStarted)
+			MCM.Mod.RemoveCallback(ModCallbacks.MC_POST_GAME_STARTED, MCM.PostGameStarted)
 		end
 	end
 	
-	if ModConfigMenu.PostUpdate then
-		ModConfigMenu.Mod:RemoveCallback(ModCallbacks.MC_POST_UPDATE, ModConfigMenu.PostUpdate)
+	if MCM.PostUpdate then
+		MCM.Mod:RemoveCallback(ModCallbacks.MC_POST_UPDATE, MCM.PostUpdate)
 	end
-	
-	if ModConfigMenu.PostRender then
-		ModConfigMenu.Mod:RemoveCallback(ModCallbacks.MC_POST_RENDER, ModConfigMenu.PostRender)
+	if MCM.PostRender then
+		MCM.Mod:RemoveCallback(ModCallbacks.MC_POST_RENDER, MCM.PostRender)
 	end
-	
-	if ModConfigMenu.InputAction then
-		ModConfigMenu.Mod:RemoveCallback(ModCallbacks.MC_INPUT_ACTION, ModConfigMenu.InputAction)
+	if MCM.InputAction then
+		MCM.Mod:RemoveCallback(ModCallbacks.MC_INPUT_ACTION, MCM.InputAction)
 	end
-	
-	if ModConfigMenu.ExecuteCmd then
-		ModConfigMenu.Mod:RemoveCallback(ModCallbacks.MC_EXECUTE_CMD, ModConfigMenu.ExecuteCmd)
+	if MCM.ExecuteCmd then
+		MCM.Mod:RemoveCallback(ModCallbacks.MC_EXECUTE_CMD, MCM.ExecuteCmd)
 	end
-
 end
 
-ModConfigMenu.Version = fileVersion
+if not MCM then
+	MCM = {}
+end
+
+--Proxy stuff so old stuff will work. Probably a bad idea but whatever
+ModConfigMenu = MCM
+
+local json = require("json")
+local IS_DEV = false
+
+MCM.Version = fileVersion
 
 -----------
 -- setup --
 -----------
-Isaac.DebugString("Loading Mod Config Menu v" .. ModConfigMenu.Version)
+Isaac.DebugString("Loading Mod Config Menu v" .. MCM.Version)
 
 local vecZero = Vector(0,0)
 
@@ -137,7 +134,7 @@ if not SaveHelper then
 end
 
 --create the mod
-ModConfigMenu.Mod = ModConfigMenu.Mod or RegisterMod("Mod Config Menu", 1)
+MCM.Mod = MCM.Mod or RegisterMod("Mod Config Menu", 1)
 
 
 -------------------
@@ -153,25 +150,25 @@ CustomCallbacks.MCM_POST_MODIFY_SETTING = 4200
 --SAVING--
 ----------
 
-ModConfigMenu.SetConfigMetatables = ModConfigMenu.SetConfigMetatables or function() return end
+MCM.SetConfigMetatables = MCM.SetConfigMetatables or function() return end
 
-ModConfigMenu.ConfigDefault = ModConfigMenu.ConfigDefault or {}
-SaveHelper.FillTable(ModConfigMenu.ConfigDefault,{
+MCM.ConfigDefault = MCM.ConfigDefault or {}
+SaveHelper.FillTable(MCM.ConfigDefault,{
 	
 	--last button pressed tracker
 	LastBackPressed = Keyboard.KEY_ESCAPE,
 	LastSelectPressed = Keyboard.KEY_ENTER
 	
 })
-ModConfigMenu.Config = ModConfigMenu.Config or {}
-SaveHelper.FillTable(ModConfigMenu.Config, ModConfigMenu.ConfigDefault)
+MCM.Config = MCM.Config or {}
+SaveHelper.FillTable(MCM.Config, MCM.ConfigDefault)
 
-ModConfigMenu.SetConfigMetatables()
+MCM.SetConfigMetatables()
 
-function ModConfigMenu.GetSave()
+function MCM.GetSave()
 	
-	local saveData = SaveHelper.CopyTable(ModConfigMenu.ConfigDefault)
-	saveData = SaveHelper.FillTable(saveData, ModConfigMenu.Config)
+	local saveData = SaveHelper.CopyTable(MCM.ConfigDefault)
+	saveData = SaveHelper.FillTable(saveData, MCM.Config)
 	
 	saveData = json.encode(saveData)
 	
@@ -179,26 +176,26 @@ function ModConfigMenu.GetSave()
 	
 end
 
-function ModConfigMenu.LoadSave(fromData)
+function MCM.LoadSave(fromData)
 
 	if fromData and ((type(fromData) == "string" and json.decode(fromData)) or type(fromData) == "table") then
 	
-		local saveData = SaveHelper.CopyTable(ModConfigMenu.ConfigDefault)
+		local saveData = SaveHelper.CopyTable(MCM.ConfigDefault)
 		
 		if type(fromData) == "string" then
 			fromData = json.decode(fromData)
 		end
 		saveData = SaveHelper.FillTable(saveData, fromData)
 		
-		local currentData = SaveHelper.CopyTable(ModConfigMenu.Config)
+		local currentData = SaveHelper.CopyTable(MCM.Config)
 		saveData = SaveHelper.FillTable(currentData, saveData)
 		
-		ModConfigMenu.Config = SaveHelper.CopyTable(saveData)
-		ModConfigMenu.SetConfigMetatables()
+		MCM.Config = SaveHelper.CopyTable(saveData)
+		MCM.SetConfigMetatables()
 		
 		--make sure ScreenHelper's offset matches MCM's offset
 		if ScreenHelper then
-			ScreenHelper.SetOffset(ModConfigMenu.Config["General"].HudOffset)
+			ScreenHelper.SetOffset(MCM.Config["General"].HudOffset)
 		end
 		
 		return saveData
@@ -217,14 +214,14 @@ versionPrintFont:Load("font/pftempestasevencondensed.fnt")
 local versionPrintTimer = 0
 
 --returns true if the room is clear and there are no active enemies and there are no projectiles
-ModConfigMenu.IgnoreActiveEnemies = ModConfigMenu.IgnoreActiveEnemies or {}
-function ModConfigMenu.RoomIsSafe()
+MCM.IgnoreActiveEnemies = MCM.IgnoreActiveEnemies or {}
+function MCM.RoomIsSafe()
 
 	local roomHasDanger = false
 	
 	for _, entity in pairs(Isaac.GetRoomEntities()) do
 		if entity:IsActiveEnemy() and not entity:HasEntityFlags(EntityFlag.FLAG_FRIENDLY)
-		and (not ModConfigMenu.IgnoreActiveEnemies[entity.Type] or (ModConfigMenu.IgnoreActiveEnemies[entity.Type] and not ModConfigMenu.IgnoreActiveEnemies[entity.Type][-1] and not ModConfigMenu.IgnoreActiveEnemies[entity.Type][entity.Variant])) then
+		and (not MCM.IgnoreActiveEnemies[entity.Type] or (MCM.IgnoreActiveEnemies[entity.Type] and not MCM.IgnoreActiveEnemies[entity.Type][-1] and not MCM.IgnoreActiveEnemies[entity.Type][entity.Variant])) then
 			roomHasDanger = true
 		elseif entity.Type == EntityType.ENTITY_PROJECTILE and entity:ToProjectile().ProjectileFlags & ProjectileFlags.CANT_HIT_PLAYER ~= 1 then
 			roomHasDanger = true
@@ -244,40 +241,40 @@ function ModConfigMenu.RoomIsSafe()
 	
 end
 
-ModConfigMenu.IsVisible = false
-function ModConfigMenu.PostGameStarted()
+MCM.IsVisible = false
+function MCM.PostGameStarted()
 
 	rerunWarnMessage = nil
 
-	if ModConfigMenu.Config["Mod Config Menu"].ShowControls then
+	if MCM.Config["Mod Config Menu"].ShowControls then
 	
 		versionPrintTimer = 120
 		
 	end
 	
-	ModConfigMenu.IsVisible = false
+	MCM.IsVisible = false
 	
 	--add potato dummy to ignore list
 	local potatoType = Isaac.GetEntityTypeByName("Potato Dummy")
 	local potatoVariant = Isaac.GetEntityVariantByName("Potato Dummy")
 	
 	if potatoType and potatoType > 0 then
-		ModConfigMenu.IgnoreActiveEnemies[potatoType] = ModConfigMenu.IgnoreActiveEnemies or {}
-		ModConfigMenu.IgnoreActiveEnemies[potatoType][potatoVariant] = true
+		MCM.IgnoreActiveEnemies[potatoType] = MCM.IgnoreActiveEnemies or {}
+		MCM.IgnoreActiveEnemies[potatoType][potatoVariant] = true
 	end
 	
 end
-if ModConfigMenu.Mod.AddCustomCallback then
-	ModConfigMenu.Mod:AddCustomCallback(CustomCallbacks.CCH_GAME_STARTED, ModConfigMenu.PostGameStarted)
+if MCM.Mod.AddCustomCallback then
+	MCM.Mod:AddCustomCallback(CustomCallbacks.CCH_GAME_STARTED, MCM.PostGameStarted)
 else
-	ModConfigMenu.Mod.AddCallback(ModCallbacks.MC_POST_GAME_STARTED, ModConfigMenu.PostGameStarted)
+	MCM.Mod.AddCallback(ModCallbacks.MC_POST_GAME_STARTED, MCM.PostGameStarted)
 end
 
 
 ---------------
 --post update--
 ---------------
-function ModConfigMenu.PostUpdate()
+function MCM.PostUpdate()
 
 	if versionPrintTimer > 0 then
 	
@@ -286,13 +283,13 @@ function ModConfigMenu.PostUpdate()
 	end
 	
 end
-ModConfigMenu.Mod:AddCallback(ModCallbacks.MC_POST_UPDATE, ModConfigMenu.PostUpdate)
+MCM.Mod:AddCallback(ModCallbacks.MC_POST_UPDATE, MCM.PostUpdate)
 
 
 ------------------------------------
 --set up the menu sprites and font--
 ------------------------------------
-function ModConfigMenu.GetMenuAnm2Sprite(animation, frame, color)
+function MCM.GetMenuAnm2Sprite(animation, frame, color)
 
 	local sprite = Sprite()
 	
@@ -308,39 +305,39 @@ function ModConfigMenu.GetMenuAnm2Sprite(animation, frame, color)
 end
 
 --main menu sprites
-local MenuSprite = ModConfigMenu.GetMenuAnm2Sprite("Idle", 0)
-local MenuOverlaySprite = ModConfigMenu.GetMenuAnm2Sprite("IdleOverlay", 0)
-local PopupSprite = ModConfigMenu.GetMenuAnm2Sprite("Popup", 0)
+local MenuSprite = MCM.GetMenuAnm2Sprite("Idle", 0)
+local MenuOverlaySprite = MCM.GetMenuAnm2Sprite("IdleOverlay", 0)
+local PopupSprite = MCM.GetMenuAnm2Sprite("Popup", 0)
 
 --main cursors
-local CursorSpriteRight = ModConfigMenu.GetMenuAnm2Sprite("Cursor", 0)
-local CursorSpriteUp = ModConfigMenu.GetMenuAnm2Sprite("Cursor", 1)
-local CursorSpriteDown = ModConfigMenu.GetMenuAnm2Sprite("Cursor", 2)
+local CursorSpriteRight = MCM.GetMenuAnm2Sprite("Cursor", 0)
+local CursorSpriteUp = MCM.GetMenuAnm2Sprite("Cursor", 1)
+local CursorSpriteDown = MCM.GetMenuAnm2Sprite("Cursor", 2)
 
 --colors
 local colorDefault = Color(1,1,1,1,0,0,0)
 local colorHalf = Color(1,1,1,0.5,0,0,0)
 
 --subcategory pane cursors
-local SubcategoryCursorSpriteLeft = ModConfigMenu.GetMenuAnm2Sprite("Cursor", 3, colorHalf)
-local SubcategoryCursorSpriteRight = ModConfigMenu.GetMenuAnm2Sprite("Cursor", 0, colorHalf)
+local SubcategoryCursorSpriteLeft = MCM.GetMenuAnm2Sprite("Cursor", 3, colorHalf)
+local SubcategoryCursorSpriteRight = MCM.GetMenuAnm2Sprite("Cursor", 0, colorHalf)
 
 --options pane cursors
-local OptionsCursorSpriteUp = ModConfigMenu.GetMenuAnm2Sprite("Cursor", 1, colorHalf)
-local OptionsCursorSpriteDown = ModConfigMenu.GetMenuAnm2Sprite("Cursor", 2, colorHalf)
+local OptionsCursorSpriteUp = MCM.GetMenuAnm2Sprite("Cursor", 1, colorHalf)
+local OptionsCursorSpriteDown = MCM.GetMenuAnm2Sprite("Cursor", 2, colorHalf)
 
 --other options pane objects
-local SubcategoryDividerSprite = ModConfigMenu.GetMenuAnm2Sprite("Divider", 0, colorHalf)
-local SliderSprite = ModConfigMenu.GetMenuAnm2Sprite("Slider1", 0)
+local SubcategoryDividerSprite = MCM.GetMenuAnm2Sprite("Divider", 0, colorHalf)
+local SliderSprite = MCM.GetMenuAnm2Sprite("Slider1", 0)
 
 --strikeout
-local StrikeOutSprite = ModConfigMenu.GetMenuAnm2Sprite("Strikeout", 0)
+local StrikeOutSprite = MCM.GetMenuAnm2Sprite("Strikeout", 0)
 
 --back/select corner papers
-local CornerSelect = ModConfigMenu.GetMenuAnm2Sprite("BackSelect", 0)
-local CornerBack = ModConfigMenu.GetMenuAnm2Sprite("BackSelect", 1)
-local CornerOpen = ModConfigMenu.GetMenuAnm2Sprite("BackSelect", 2)
-local CornerExit = ModConfigMenu.GetMenuAnm2Sprite("BackSelect", 3)
+local CornerSelect = MCM.GetMenuAnm2Sprite("BackSelect", 0)
+local CornerBack = MCM.GetMenuAnm2Sprite("BackSelect", 1)
+local CornerOpen = MCM.GetMenuAnm2Sprite("BackSelect", 2)
+local CornerExit = MCM.GetMenuAnm2Sprite("BackSelect", 3)
 
 --fonts
 local Font10 = Font()
@@ -353,32 +350,32 @@ local Font16Bold = Font()
 Font16Bold:Load("font/teammeatfont16bold.fnt")
 
 --popups
-ModConfigMenu.PopupGfx = ModConfigMenu.PopupGfx or {}
-ModConfigMenu.PopupGfx.THIN_SMALL = "gfx/ui/modconfig/popup_thin_small.png"
-ModConfigMenu.PopupGfx.THIN_MEDIUM = "gfx/ui/modconfig/popup_thin_medium.png"
-ModConfigMenu.PopupGfx.THIN_LARGE = "gfx/ui/modconfig/popup_thin_large.png"
-ModConfigMenu.PopupGfx.WIDE_SMALL = "gfx/ui/modconfig/popup_wide_small.png"
-ModConfigMenu.PopupGfx.WIDE_MEDIUM = "gfx/ui/modconfig/popup_wide_medium.png"
-ModConfigMenu.PopupGfx.WIDE_LARGE = "gfx/ui/modconfig/popup_wide_large.png"
+MCM.PopupGfx = MCM.PopupGfx or {}
+MCM.PopupGfx.THIN_SMALL = "gfx/ui/modconfig/popup_thin_small.png"
+MCM.PopupGfx.THIN_MEDIUM = "gfx/ui/modconfig/popup_thin_medium.png"
+MCM.PopupGfx.THIN_LARGE = "gfx/ui/modconfig/popup_thin_large.png"
+MCM.PopupGfx.WIDE_SMALL = "gfx/ui/modconfig/popup_wide_small.png"
+MCM.PopupGfx.WIDE_MEDIUM = "gfx/ui/modconfig/popup_wide_medium.png"
+MCM.PopupGfx.WIDE_LARGE = "gfx/ui/modconfig/popup_wide_large.png"
 
 
 -------------------------
 --add setting functions--
 -------------------------
-ModConfigMenu.OptionType = ModConfigMenu.OptionType or {}
-ModConfigMenu.OptionType.TEXT = 1
-ModConfigMenu.OptionType.SPACE = 2
-ModConfigMenu.OptionType.SCROLL = 3
-ModConfigMenu.OptionType.BOOLEAN = 4
-ModConfigMenu.OptionType.NUMBER = 5
-ModConfigMenu.OptionType.KEYBIND_KEYBOARD = 6
-ModConfigMenu.OptionType.KEYBIND_CONTROLLER = 7
-ModConfigMenu.OptionType.TITLE = 8
+MCM.OptionType = MCM.OptionType or {}
+MCM.OptionType.TEXT = 1
+MCM.OptionType.SPACE = 2
+MCM.OptionType.SCROLL = 3
+MCM.OptionType.BOOLEAN = 4
+MCM.OptionType.NUMBER = 5
+MCM.OptionType.KEYBIND_KEYBOARD = 6
+MCM.OptionType.KEYBIND_CONTROLLER = 7
+MCM.OptionType.TITLE = 8
 
-ModConfigMenu.MenuData = ModConfigMenu.MenuData or {}
+MCM.MenuData = MCM.MenuData or {}
 
 --CATEGORY FUNCTIONS
-function ModConfigMenu.GetCategoryIDByName(categoryName)
+function MCM.GetCategoryIDByName(categoryName)
 
 	if type(categoryName) ~= "string" then
 		return categoryName
@@ -386,8 +383,8 @@ function ModConfigMenu.GetCategoryIDByName(categoryName)
 	
 	local categoryID = nil
 	
-	for i=1, #ModConfigMenu.MenuData do
-		if categoryName == ModConfigMenu.MenuData[i].Name then
+	for i=1, #MCM.MenuData do
+		if categoryName == MCM.MenuData[i].Name then
 			categoryID = i
 			break
 		end
@@ -397,55 +394,55 @@ function ModConfigMenu.GetCategoryIDByName(categoryName)
 	
 end
 
-function ModConfigMenu.UpdateCategory(categoryName, dataTable)
+function MCM.UpdateCategory(categoryName, dataTable)
 
 	if type(categoryName) ~= "string" and type(categoryName) ~= "number" then
-		error("ModConfigMenu.UpdateCategory - No valid category name provided", 2)
+		error("MCM.UpdateCategory - No valid category name provided", 2)
 	end
 	
-	local categoryID = ModConfigMenu.GetCategoryIDByName(categoryName)
+	local categoryID = MCM.GetCategoryIDByName(categoryName)
 	if categoryID == nil then
-		categoryID = #ModConfigMenu.MenuData+1
-		ModConfigMenu.MenuData[categoryID] = {}
-		ModConfigMenu.MenuData[categoryID].Subcategories = {}
+		categoryID = #MCM.MenuData+1
+		MCM.MenuData[categoryID] = {}
+		MCM.MenuData[categoryID].Subcategories = {}
 	end
 	
 	if type(categoryName) == "string" or dataTable.Name then
-		ModConfigMenu.MenuData[categoryID].Name = dataTable.Name or categoryName
+		MCM.MenuData[categoryID].Name = dataTable.Name or categoryName
 	end
 	
 	if dataTable.Info then
-		ModConfigMenu.MenuData[categoryID].Info = dataTable.Info
+		MCM.MenuData[categoryID].Info = dataTable.Info
 	end
 	
 	if dataTable.IsOld then
-		ModConfigMenu.MenuData[categoryID].IsOld = dataTable.IsOld
+		MCM.MenuData[categoryID].IsOld = dataTable.IsOld
 	end
 	
 end
 
-function ModConfigMenu.SetCategoryInfo(categoryName, info)
+function MCM.SetCategoryInfo(categoryName, info)
 
 	if type(categoryName) ~= "string" and type(categoryName) ~= "number" then
-		error("ModConfigMenu.SetCategoryInfo - No valid category name provided", 2)
+		error("MCM.SetCategoryInfo - No valid category name provided", 2)
 	end
 
-	ModConfigMenu.UpdateCategory(categoryName, {
+	MCM.UpdateCategory(categoryName, {
 		Info = info
 	})
 	
 end
 
-function ModConfigMenu.RemoveCategory(categoryName)
+function MCM.RemoveCategory(categoryName)
 
 	if type(categoryName) ~= "string" and type(categoryName) ~= "number" then
-		error("ModConfigMenu.RemoveCategory - No valid category name provided", 2)
+		error("MCM.RemoveCategory - No valid category name provided", 2)
 	end
 	
-	local categoryID = ModConfigMenu.GetCategoryIDByName(categoryName)
+	local categoryID = MCM.GetCategoryIDByName(categoryName)
 	if categoryID then
 	
-		table.remove(ModConfigMenu.MenuData, categoryID)
+		table.remove(MCM.MenuData, categoryID)
 		return true
 		
 	end
@@ -455,13 +452,13 @@ function ModConfigMenu.RemoveCategory(categoryName)
 end
 
 --SUBCATEGORY FUNCTIONS
-function ModConfigMenu.GetSubcategoryIDByName(categoryName, subcategoryName)
+function MCM.GetSubcategoryIDByName(categoryName, subcategoryName)
 
 	if type(categoryName) ~= "string" and type(categoryName) ~= "number" then
-		error("ModConfigMenu.GetSubcategoryIDByName - No valid category name provided", 2)
+		error("MCM.GetSubcategoryIDByName - No valid category name provided", 2)
 	end
 	
-	local categoryID = ModConfigMenu.GetCategoryIDByName(categoryName)
+	local categoryID = MCM.GetCategoryIDByName(categoryName)
 
 	if type(subcategoryName) ~= "string" then
 		return subcategoryName
@@ -469,8 +466,8 @@ function ModConfigMenu.GetSubcategoryIDByName(categoryName, subcategoryName)
 	
 	local subcategoryID = nil
 	
-	for i=1, #ModConfigMenu.MenuData[categoryID].Subcategories do
-		if subcategoryName == ModConfigMenu.MenuData[categoryID].Subcategories[i].Name then
+	for i=1, #MCM.MenuData[categoryID].Subcategories do
+		if subcategoryName == MCM.MenuData[categoryID].Subcategories[i].Name then
 			subcategoryID = i
 			break
 		end
@@ -480,58 +477,58 @@ function ModConfigMenu.GetSubcategoryIDByName(categoryName, subcategoryName)
 	
 end
 
-function ModConfigMenu.UpdateSubcategory(categoryName, subcategoryName, dataTable)
+function MCM.UpdateSubcategory(categoryName, subcategoryName, dataTable)
 
 	if type(categoryName) ~= "string" and type(categoryName) ~= "number" then
-		error("ModConfigMenu.UpdateSubcategory - No valid category name provided", 2)
+		error("MCM.UpdateSubcategory - No valid category name provided", 2)
 	end
 
 	if type(subcategoryName) ~= "string" and type(subcategoryName) ~= "number" then
-		error("ModConfigMenu.UpdateSubcategory - No valid subcategory name provided", 2)
+		error("MCM.UpdateSubcategory - No valid subcategory name provided", 2)
 	end
 	
-	local categoryID = ModConfigMenu.GetCategoryIDByName(categoryName)
+	local categoryID = MCM.GetCategoryIDByName(categoryName)
 	if categoryID == nil then
-		categoryID = #ModConfigMenu.MenuData+1
-		ModConfigMenu.MenuData[categoryID] = {}
-		ModConfigMenu.MenuData[categoryID].Name = tostring(categoryName)
-		ModConfigMenu.MenuData[categoryID].Subcategories = {}
+		categoryID = #MCM.MenuData+1
+		MCM.MenuData[categoryID] = {}
+		MCM.MenuData[categoryID].Name = tostring(categoryName)
+		MCM.MenuData[categoryID].Subcategories = {}
 	end
 	
-	local subcategoryID = ModConfigMenu.GetSubcategoryIDByName(categoryID, subcategoryName)
+	local subcategoryID = MCM.GetSubcategoryIDByName(categoryID, subcategoryName)
 	if subcategoryID == nil then
-		subcategoryID = #ModConfigMenu.MenuData[categoryID].Subcategories+1
-		ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID] = {}
-		ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Options = {}
+		subcategoryID = #MCM.MenuData[categoryID].Subcategories+1
+		MCM.MenuData[categoryID].Subcategories[subcategoryID] = {}
+		MCM.MenuData[categoryID].Subcategories[subcategoryID].Options = {}
 	end
 	
 	if type(subcategoryName) == "string" or dataTable.Name then
-		ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Name = dataTable.Name or subcategoryName
+		MCM.MenuData[categoryID].Subcategories[subcategoryID].Name = dataTable.Name or subcategoryName
 	end
 	
 	if dataTable.Info then
-		ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Info = dataTable.Info
+		MCM.MenuData[categoryID].Subcategories[subcategoryID].Info = dataTable.Info
 	end
 	
 end
 
-function ModConfigMenu.RemoveSubcategory(categoryName, subcategoryName)
+function MCM.RemoveSubcategory(categoryName, subcategoryName)
 
 	if type(categoryName) ~= "string" and type(categoryName) ~= "number" then
-		error("ModConfigMenu.RemoveSubcategory - No valid category name provided", 2)
+		error("MCM.RemoveSubcategory - No valid category name provided", 2)
 	end
 
 	if type(subcategoryName) ~= "string" and type(subcategoryName) ~= "number" then
-		error("ModConfigMenu.RemoveSubcategory - No valid subcategory name provided", 2)
+		error("MCM.RemoveSubcategory - No valid subcategory name provided", 2)
 	end
 	
-	local categoryID = ModConfigMenu.GetCategoryIDByName(categoryName)
+	local categoryID = MCM.GetCategoryIDByName(categoryName)
 	if categoryID then
 	
-		local subcategoryID = ModConfigMenu.GetSubcategoryIDByName(categoryID, subcategoryName)
+		local subcategoryID = MCM.GetSubcategoryIDByName(categoryID, subcategoryName)
 		if subcategoryID then
 		
-			table.remove(ModConfigMenu.MenuData[categoryID].Subcategories, subcategoryID)
+			table.remove(MCM.MenuData[categoryID].Subcategories, subcategoryID)
 			return true
 			
 		end
@@ -543,7 +540,7 @@ function ModConfigMenu.RemoveSubcategory(categoryName, subcategoryName)
 end
 
 --SETTING FUNCTIONS
-function ModConfigMenu.AddSetting(categoryName, subcategoryName, settingTable)
+function MCM.AddSetting(categoryName, subcategoryName, settingTable)
 
 	if settingTable == nil then
 		settingTable = subcategoryName
@@ -551,37 +548,37 @@ function ModConfigMenu.AddSetting(categoryName, subcategoryName, settingTable)
 	end
 
 	if type(categoryName) ~= "string" and type(categoryName) ~= "number" then
-		error("ModConfigMenu.AddSetting - No valid category name provided", 2)
+		error("MCM.AddSetting - No valid category name provided", 2)
 	end
 	
 	subcategoryName = subcategoryName or "Uncategorized"
 	if type(subcategoryName) ~= "string" and type(subcategoryName) ~= "number" then
-		error("ModConfigMenu.AddSetting - No valid subcategory name provided", 2)
+		error("MCM.AddSetting - No valid subcategory name provided", 2)
 	end
 	
-	local categoryID = ModConfigMenu.GetCategoryIDByName(categoryName)
+	local categoryID = MCM.GetCategoryIDByName(categoryName)
 	if categoryID == nil then
-		categoryID = #ModConfigMenu.MenuData+1
-		ModConfigMenu.MenuData[categoryID] = {}
-		ModConfigMenu.MenuData[categoryID].Name = tostring(categoryName)
-		ModConfigMenu.MenuData[categoryID].Subcategories = {}
+		categoryID = #MCM.MenuData+1
+		MCM.MenuData[categoryID] = {}
+		MCM.MenuData[categoryID].Name = tostring(categoryName)
+		MCM.MenuData[categoryID].Subcategories = {}
 	end
 	
-	local subcategoryID = ModConfigMenu.GetSubcategoryIDByName(categoryID, subcategoryName)
+	local subcategoryID = MCM.GetSubcategoryIDByName(categoryID, subcategoryName)
 	if subcategoryID == nil then
-		subcategoryID = #ModConfigMenu.MenuData[categoryID].Subcategories+1
-		ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID] = {}
-		ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Name = tostring(subcategoryName)
-		ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Options = {}
+		subcategoryID = #MCM.MenuData[categoryID].Subcategories+1
+		MCM.MenuData[categoryID].Subcategories[subcategoryID] = {}
+		MCM.MenuData[categoryID].Subcategories[subcategoryID].Name = tostring(subcategoryName)
+		MCM.MenuData[categoryID].Subcategories[subcategoryID].Options = {}
 	end
 	
-	ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Options[#ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Options+1] = settingTable
+	MCM.MenuData[categoryID].Subcategories[subcategoryID].Options[#MCM.MenuData[categoryID].Subcategories[subcategoryID].Options+1] = settingTable
 	
 	return settingTable
 	
 end
 
-function ModConfigMenu.AddText(categoryName, subcategoryName, text, color)
+function MCM.AddText(categoryName, subcategoryName, text, color)
 
 	if color == nil and type(text) ~= "string" and type(text) ~= "function" then
 		color = text
@@ -590,26 +587,26 @@ function ModConfigMenu.AddText(categoryName, subcategoryName, text, color)
 	end
 
 	if type(categoryName) ~= "string" and type(categoryName) ~= "number" then
-		error("ModConfigMenu.AddText - No valid category name provided", 2)
+		error("MCM.AddText - No valid category name provided", 2)
 	end
 	
 	subcategoryName = subcategoryName or "Uncategorized"
 	if type(subcategoryName) ~= "string" and type(subcategoryName) ~= "number" then
-		error("ModConfigMenu.AddText - No valid subcategory name provided", 2)
+		error("MCM.AddText - No valid subcategory name provided", 2)
 	end
 	
 	local settingTable = {
-		Type = ModConfigMenu.OptionType.TEXT,
+		Type = MCM.OptionType.TEXT,
 		Display = text,
 		Color = color,
 		NoCursorHere = true
 	}
 	
-	return ModConfigMenu.AddSetting(categoryName, subcategoryName, settingTable)
+	return MCM.AddSetting(categoryName, subcategoryName, settingTable)
 	
 end
 
-function ModConfigMenu.AddTitle(categoryName, subcategoryName, text, color)
+function MCM.AddTitle(categoryName, subcategoryName, text, color)
 
 	if color == nil and type(text) ~= "string" and type(text) ~= "function" then
 		color = text
@@ -618,57 +615,57 @@ function ModConfigMenu.AddTitle(categoryName, subcategoryName, text, color)
 	end
 	
 	if type(categoryName) ~= "string" and type(categoryName) ~= "number" then
-		error("ModConfigMenu.AddTitle - No valid category name provided", 2)
+		error("MCM.AddTitle - No valid category name provided", 2)
 	end
 	
 	subcategoryName = subcategoryName or "Uncategorized"
 	if type(subcategoryName) ~= "string" and type(subcategoryName) ~= "number" then
-		error("ModConfigMenu.AddTitle - No valid subcategory name provided", 2)
+		error("MCM.AddTitle - No valid subcategory name provided", 2)
 	end
 	
 	local settingTable = {
-		Type = ModConfigMenu.OptionType.TITLE,
+		Type = MCM.OptionType.TITLE,
 		Display = text,
 		Color = color,
 		NoCursorHere = true
 	}
 	
-	return ModConfigMenu.AddSetting(categoryName, subcategoryName, settingTable)
+	return MCM.AddSetting(categoryName, subcategoryName, settingTable)
 	
 end
 
-function ModConfigMenu.AddSpace(categoryName, subcategoryName)
+function MCM.AddSpace(categoryName, subcategoryName)
 	
 	if type(categoryName) ~= "string" and type(categoryName) ~= "number" then
-		error("ModConfigMenu.AddSpace - No valid category name provided", 2)
+		error("MCM.AddSpace - No valid category name provided", 2)
 	end
 	
 	subcategoryName = subcategoryName or "Uncategorized"
 	if type(subcategoryName) ~= "string" and type(subcategoryName) ~= "number" then
-		error("ModConfigMenu.AddSpace - No valid subcategory name provided", 2)
+		error("MCM.AddSpace - No valid subcategory name provided", 2)
 	end
 
 	local settingTable = {
-		Type = ModConfigMenu.OptionType.SPACE
+		Type = MCM.OptionType.SPACE
 	}
 	
-	return ModConfigMenu.AddSetting(categoryName, subcategoryName, settingTable)
+	return MCM.AddSetting(categoryName, subcategoryName, settingTable)
 	
 end
 
 local altSlider = false
-function ModConfigMenu.SimpleAddSetting(settingType, categoryName, subcategoryName, configTableAttribute, minValue, maxValue, modifyBy, defaultValue, displayText, displayValueProxies, displayDevice, info, color, functionName)
+function MCM.SimpleAddSetting(settingType, categoryName, subcategoryName, configTableAttribute, minValue, maxValue, modifyBy, defaultValue, displayText, displayValueProxies, displayDevice, info, color, functionName)
 	
 	--set default values
 	if defaultValue == nil then
-		if settingType == ModConfigMenu.OptionType.BOOLEAN then
+		if settingType == MCM.OptionType.BOOLEAN then
 			defaultValue = false
 		else
 			defaultValue = 0
 		end
 	end
 	
-	if settingType == ModConfigMenu.OptionType.NUMBER then
+	if settingType == MCM.OptionType.NUMBER then
 		minValue = minValue or 0
 		maxValue = maxValue or 10
 		modifyBy = modifyBy or 1
@@ -682,21 +679,21 @@ function ModConfigMenu.SimpleAddSetting(settingType, categoryName, subcategoryNa
 	
 	--erroring
 	if categoryName == nil then
-		error("ModConfigMenu." .. tostring(functionName) .. " - No valid category name provided", 2)
+		error("MCM." .. tostring(functionName) .. " - No valid category name provided", 2)
 	end
 	if configTableAttribute == nil then
-		error("ModConfigMenu." .. tostring(functionName) .. " - No valid config table attribute provided", 2)
+		error("MCM." .. tostring(functionName) .. " - No valid config table attribute provided", 2)
 	end
 	
 	--create config value
-	ModConfigMenu.Config[categoryName] = ModConfigMenu.Config[categoryName] or {}
-	if ModConfigMenu.Config[categoryName][configTableAttribute] == nil then
-		ModConfigMenu.Config[categoryName][configTableAttribute] = defaultValue
+	MCM.Config[categoryName] = MCM.Config[categoryName] or {}
+	if MCM.Config[categoryName][configTableAttribute] == nil then
+		MCM.Config[categoryName][configTableAttribute] = defaultValue
 	end
 	
-	ModConfigMenu.ConfigDefault[categoryName] = ModConfigMenu.ConfigDefault[categoryName] or {}
-	if ModConfigMenu.ConfigDefault[categoryName][configTableAttribute] == nil then
-		ModConfigMenu.ConfigDefault[categoryName][configTableAttribute] = defaultValue
+	MCM.ConfigDefault[categoryName] = MCM.ConfigDefault[categoryName] or {}
+	if MCM.ConfigDefault[categoryName][configTableAttribute] == nil then
+		MCM.ConfigDefault[categoryName][configTableAttribute] = defaultValue
 	end
 	
 	--setting
@@ -704,12 +701,12 @@ function ModConfigMenu.SimpleAddSetting(settingType, categoryName, subcategoryNa
 		Type = settingType,
 		Attribute = configTableAttribute,
 		CurrentSetting = function()
-			return ModConfigMenu.Config[categoryName][configTableAttribute]
+			return MCM.Config[categoryName][configTableAttribute]
 		end,
 		Default = defaultValue,
 		Display = function(cursorIsAtThisOption, configMenuInOptions, lastOptionPos)
 		
-			local currentValue = ModConfigMenu.Config[categoryName][configTableAttribute]
+			local currentValue = MCM.Config[categoryName][configTableAttribute]
 		
 			local displayString = ""
 			
@@ -717,11 +714,11 @@ function ModConfigMenu.SimpleAddSetting(settingType, categoryName, subcategoryNa
 				displayString = displayText .. ": "
 			end
 			
-			if settingType == ModConfigMenu.OptionType.SCROLL then
+			if settingType == MCM.OptionType.SCROLL then
 			
 				displayString = displayString .. "$scroll" .. tostring(math.floor(currentValue))
 				
-			elseif settingType == ModConfigMenu.OptionType.KEYBIND_KEYBOARD then
+			elseif settingType == MCM.OptionType.KEYBIND_KEYBOARD then
 				
 				local key = "None"
 				
@@ -743,7 +740,7 @@ function ModConfigMenu.SimpleAddSetting(settingType, categoryName, subcategoryNa
 					
 				end
 				
-			elseif settingType == ModConfigMenu.OptionType.KEYBIND_CONTROLLER then
+			elseif settingType == MCM.OptionType.KEYBIND_CONTROLLER then
 				
 				local key = "None"
 				
@@ -782,45 +779,45 @@ function ModConfigMenu.SimpleAddSetting(settingType, categoryName, subcategoryNa
 		
 			if not currentValue then
 			
-				if settingType == ModConfigMenu.OptionType.KEYBIND_KEYBOARD or settingType == ModConfigMenu.OptionType.KEYBIND_CONTROLLER then
+				if settingType == MCM.OptionType.KEYBIND_KEYBOARD or settingType == MCM.OptionType.KEYBIND_CONTROLLER then
 					currentValue = -1
 				end
 				
 			end
 			
-			ModConfigMenu.Config[categoryName][configTableAttribute] = currentValue
+			MCM.Config[categoryName][configTableAttribute] = currentValue
 			
 		end,
 		Info = info,
 		Color = color
 	}
 	
-	if settingType == ModConfigMenu.OptionType.NUMBER then
+	if settingType == MCM.OptionType.NUMBER then
 	
 		settingTable.Minimum = minValue
 		settingTable.Maximum = maxValue
 		settingTable.ModifyBy = modifyBy
 		
-	elseif settingType == ModConfigMenu.OptionType.SCROLL then
+	elseif settingType == MCM.OptionType.SCROLL then
 
 		settingTable.AltSlider = altSlider
 		altSlider = not altSlider
 		
-	elseif settingType == ModConfigMenu.OptionType.KEYBIND_KEYBOARD or settingType == ModConfigMenu.OptionType.KEYBIND_CONTROLLER then
+	elseif settingType == MCM.OptionType.KEYBIND_KEYBOARD or settingType == MCM.OptionType.KEYBIND_CONTROLLER then
 		
-		settingTable.PopupGfx = ModConfigMenu.PopupGfx.WIDE_SMALL
+		settingTable.PopupGfx = MCM.PopupGfx.WIDE_SMALL
 		settingTable.PopupWidth = 280
 		settingTable.Popup = function()
 		
-			local currentValue = ModConfigMenu.Config[categoryName][configTableAttribute]
+			local currentValue = MCM.Config[categoryName][configTableAttribute]
 		
 			local goBackString = "back"
-			if ModConfigMenu.Config.LastBackPressed then
+			if MCM.Config.LastBackPressed then
 			
-				if InputHelper.KeyboardToString[ModConfigMenu.Config.LastBackPressed] then
-					goBackString = InputHelper.KeyboardToString[ModConfigMenu.Config.LastBackPressed]
-				elseif InputHelper.ControllerToString[ModConfigMenu.Config.LastBackPressed] then
-					goBackString = InputHelper.ControllerToString[ModConfigMenu.Config.LastBackPressed]
+				if InputHelper.KeyboardToString[MCM.Config.LastBackPressed] then
+					goBackString = InputHelper.KeyboardToString[MCM.Config.LastBackPressed]
+				elseif InputHelper.ControllerToString[MCM.Config.LastBackPressed] then
+					goBackString = InputHelper.ControllerToString[MCM.Config.LastBackPressed]
 				end
 				
 			end
@@ -829,9 +826,9 @@ function ModConfigMenu.SimpleAddSetting(settingType, categoryName, subcategoryNa
 			if currentValue > -1 then
 			
 				local currentSettingString = nil
-				if (settingType == ModConfigMenu.OptionType.KEYBIND_KEYBOARD and InputHelper.KeyboardToString[currentValue]) then
+				if (settingType == MCM.OptionType.KEYBIND_KEYBOARD and InputHelper.KeyboardToString[currentValue]) then
 					currentSettingString = InputHelper.KeyboardToString[currentValue]
-				elseif (settingType == ModConfigMenu.OptionType.KEYBIND_CONTROLLER and InputHelper.ControllerToString[currentValue]) then
+				elseif (settingType == MCM.OptionType.KEYBIND_CONTROLLER and InputHelper.ControllerToString[currentValue]) then
 					currentSettingString = InputHelper.ControllerToString[currentValue]
 				end
 				
@@ -840,9 +837,9 @@ function ModConfigMenu.SimpleAddSetting(settingType, categoryName, subcategoryNa
 			end
 			
 			local deviceString = ""
-			if settingType == ModConfigMenu.OptionType.KEYBIND_KEYBOARD then
+			if settingType == MCM.OptionType.KEYBIND_KEYBOARD then
 				deviceString = "keyboard"
-			elseif settingType == ModConfigMenu.OptionType.KEYBIND_CONTROLLER then
+			elseif settingType == MCM.OptionType.KEYBIND_CONTROLLER then
 				deviceString = "controller"
 			end
 			
@@ -852,11 +849,11 @@ function ModConfigMenu.SimpleAddSetting(settingType, categoryName, subcategoryNa
 		
 	end
 	
-	return ModConfigMenu.AddSetting(categoryName, subcategoryName, settingTable)
+	return MCM.AddSetting(categoryName, subcategoryName, settingTable)
 	
 end
 
-function ModConfigMenu.AddBooleanSetting(categoryName, subcategoryName, configTableAttribute, defaultValue, displayText, displayValueProxies, info, color)
+function MCM.AddBooleanSetting(categoryName, subcategoryName, configTableAttribute, defaultValue, displayText, displayValueProxies, info, color)
 
 	--move args around
 	if type(configTableAttribute) ~= "string" then
@@ -883,11 +880,11 @@ function ModConfigMenu.AddBooleanSetting(categoryName, subcategoryName, configTa
 		displayValueProxies = nil
 	end
 	
-	return ModConfigMenu.SimpleAddSetting(ModConfigMenu.OptionType.BOOLEAN, categoryName, subcategoryName, configTableAttribute, nil, nil, nil, defaultValue, displayText, displayValueProxies, nil, info, color, "AddBooleanSetting")
+	return MCM.SimpleAddSetting(MCM.OptionType.BOOLEAN, categoryName, subcategoryName, configTableAttribute, nil, nil, nil, defaultValue, displayText, displayValueProxies, nil, info, color, "AddBooleanSetting")
 	
 end
 
-function ModConfigMenu.AddNumberSetting(categoryName, subcategoryName, configTableAttribute, minValue, maxValue, modifyBy, defaultValue, displayText, displayValueProxies, info, color)
+function MCM.AddNumberSetting(categoryName, subcategoryName, configTableAttribute, minValue, maxValue, modifyBy, defaultValue, displayText, displayValueProxies, info, color)
 
 	--move args around
 	if type(configTableAttribute) ~= "string" then
@@ -924,11 +921,11 @@ function ModConfigMenu.AddNumberSetting(categoryName, subcategoryName, configTab
 	maxValue = maxValue or 10
 	modifyBy = modifyBy or 1
 	
-	return ModConfigMenu.SimpleAddSetting(ModConfigMenu.OptionType.NUMBER, categoryName, subcategoryName, configTableAttribute, minValue, maxValue, modifyBy, defaultValue, displayText, displayValueProxies, nil, info, color, "AddNumberSetting")
+	return MCM.SimpleAddSetting(MCM.OptionType.NUMBER, categoryName, subcategoryName, configTableAttribute, minValue, maxValue, modifyBy, defaultValue, displayText, displayValueProxies, nil, info, color, "AddNumberSetting")
 	
 end
 
-function ModConfigMenu.AddScrollSetting(categoryName, subcategoryName, configTableAttribute, defaultValue, displayText, info, color)
+function MCM.AddScrollSetting(categoryName, subcategoryName, configTableAttribute, defaultValue, displayText, info, color)
 
 	--move args around
 	if type(configTableAttribute) ~= "string" then
@@ -950,11 +947,11 @@ function ModConfigMenu.AddScrollSetting(categoryName, subcategoryName, configTab
 	--set default values
 	defaultValue = defaultValue or 0
 
-	return ModConfigMenu.SimpleAddSetting(ModConfigMenu.OptionType.SCROLL, categoryName, subcategoryName, configTableAttribute, nil, nil, nil, defaultValue, displayText, nil, nil, info, color, "AddScrollSetting")
+	return MCM.SimpleAddSetting(MCM.OptionType.SCROLL, categoryName, subcategoryName, configTableAttribute, nil, nil, nil, defaultValue, displayText, nil, nil, info, color, "AddScrollSetting")
 	
 end
 
-function ModConfigMenu.AddKeyboardSetting(categoryName, subcategoryName, configTableAttribute, defaultValue, displayText, displayDevice, info, color)
+function MCM.AddKeyboardSetting(categoryName, subcategoryName, configTableAttribute, defaultValue, displayText, displayDevice, info, color)
 
 	--move args around
 	if type(configTableAttribute) ~= "string" then
@@ -983,11 +980,11 @@ function ModConfigMenu.AddKeyboardSetting(categoryName, subcategoryName, configT
 	--set default values
 	defaultValue = defaultValue or -1
 
-	return ModConfigMenu.SimpleAddSetting(ModConfigMenu.OptionType.KEYBIND_KEYBOARD, categoryName, subcategoryName, configTableAttribute, nil, nil, nil, defaultValue, displayText, nil, displayDevice, info, color, "AddKeyboardSetting")
+	return MCM.SimpleAddSetting(MCM.OptionType.KEYBIND_KEYBOARD, categoryName, subcategoryName, configTableAttribute, nil, nil, nil, defaultValue, displayText, nil, displayDevice, info, color, "AddKeyboardSetting")
 	
 end
 
-function ModConfigMenu.AddControllerSetting(categoryName, subcategoryName, configTableAttribute, defaultValue, displayText, displayDevice, info, color)
+function MCM.AddControllerSetting(categoryName, subcategoryName, configTableAttribute, defaultValue, displayText, displayDevice, info, color)
 
 	--move args around
 	if type(configTableAttribute) ~= "string" then
@@ -1016,11 +1013,11 @@ function ModConfigMenu.AddControllerSetting(categoryName, subcategoryName, confi
 	--set default values
 	defaultValue = defaultValue or -1
 
-	return ModConfigMenu.SimpleAddSetting(ModConfigMenu.OptionType.KEYBIND_CONTROLLER, categoryName, subcategoryName, configTableAttribute, nil, nil, nil, defaultValue, displayText, nil, displayDevice, info, color, "AddControllerSetting")
+	return MCM.SimpleAddSetting(MCM.OptionType.KEYBIND_CONTROLLER, categoryName, subcategoryName, configTableAttribute, nil, nil, nil, defaultValue, displayText, nil, displayDevice, info, color, "AddControllerSetting")
 	
 end
 
-function ModConfigMenu.RemoveSetting(categoryName, subcategoryName, settingAttribute)
+function MCM.RemoveSetting(categoryName, subcategoryName, settingAttribute)
 
 	if settingAttribute == nil then
 		settingAttribute = subcategoryName
@@ -1028,28 +1025,28 @@ function ModConfigMenu.RemoveSetting(categoryName, subcategoryName, settingAttri
 	end
 
 	if type(categoryName) ~= "string" and type(categoryName) ~= "number" then
-		error("ModConfigMenu.RemoveSetting - No valid category name provided", 2)
+		error("MCM.RemoveSetting - No valid category name provided", 2)
 	end
 
 	subcategoryName = subcategoryName or "Uncategorized"
 	if type(subcategoryName) ~= "string" and type(subcategoryName) ~= "number" then
-		error("ModConfigMenu.RemoveSetting - No valid subcategory name provided", 2)
+		error("MCM.RemoveSetting - No valid subcategory name provided", 2)
 	end
 	
-	local categoryID = ModConfigMenu.GetCategoryIDByName(categoryName)
+	local categoryID = MCM.GetCategoryIDByName(categoryName)
 	if categoryID then
 	
-		local subcategoryID = ModConfigMenu.GetSubcategoryIDByName(categoryID, subcategoryName)
+		local subcategoryID = MCM.GetSubcategoryIDByName(categoryID, subcategoryName)
 		if subcategoryID then
 		
 			--loop to find matching attribute
-			for i=#ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Options, 1, -1 do
+			for i=#MCM.MenuData[categoryID].Subcategories[subcategoryID].Options, 1, -1 do
 			
-				if ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Options[i]
-				and ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Options[i].Attribute
-				and ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Options[i].Attribute == settingAttribute then
+				if MCM.MenuData[categoryID].Subcategories[subcategoryID].Options[i]
+				and MCM.MenuData[categoryID].Subcategories[subcategoryID].Options[i].Attribute
+				and MCM.MenuData[categoryID].Subcategories[subcategoryID].Options[i].Attribute == settingAttribute then
 				
-					table.remove(ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Options, i)
+					table.remove(MCM.MenuData[categoryID].Subcategories[subcategoryID].Options, i)
 					return true
 					
 				end
@@ -1057,13 +1054,13 @@ function ModConfigMenu.RemoveSetting(categoryName, subcategoryName, settingAttri
 			end
 		
 			--loop to find matching display
-			for i=#ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Options, 1, -1 do
+			for i=#MCM.MenuData[categoryID].Subcategories[subcategoryID].Options, 1, -1 do
 			
-				if ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Options[i]
-				and ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Options[i].Display
-				and ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Options[i].Display == settingAttribute then
+				if MCM.MenuData[categoryID].Subcategories[subcategoryID].Options[i]
+				and MCM.MenuData[categoryID].Subcategories[subcategoryID].Options[i].Display
+				and MCM.MenuData[categoryID].Subcategories[subcategoryID].Options[i].Display == settingAttribute then
 				
-					table.remove(ModConfigMenu.MenuData[categoryID].Subcategories[subcategoryID].Options, i)
+					table.remove(MCM.MenuData[categoryID].Subcategories[subcategoryID].Options, i)
 					return true
 					
 				end
@@ -1081,13 +1078,13 @@ end
 --------------------------
 --GENERAL SETTINGS SETUP--
 --------------------------
-ModConfigMenu.SetCategoryInfo("General", "Settings that affect the majority of mods")
+MCM.SetCategoryInfo("General", "Settings that affect the majority of mods")
 
 
 ----------------------
 --HUD OFFSET SETTING--
 ----------------------
-local hudOffsetSetting = ModConfigMenu.AddScrollSetting(
+local hudOffsetSetting = MCM.AddScrollSetting(
 	"General", --category
 	"HudOffset", --attribute in table
 	0, --default value
@@ -1115,7 +1112,7 @@ end
 --------------------
 --OVERLAYS SETTING--
 --------------------
-ModConfigMenu.AddBooleanSetting(
+MCM.AddBooleanSetting(
 	"General", --category
 	"Overlays", --attribute in table
 	true, --default value
@@ -1131,7 +1128,7 @@ ModConfigMenu.AddBooleanSetting(
 -----------------------
 --CHARGE BARS SETTING--
 -----------------------
-ModConfigMenu.AddBooleanSetting(
+MCM.AddBooleanSetting(
 	"General", --category
 	"ChargeBars", --attribute in table
 	false, --default value
@@ -1147,7 +1144,7 @@ ModConfigMenu.AddBooleanSetting(
 ---------------------
 --BIG BOOKS SETTING--
 ---------------------
-ModConfigMenu.AddBooleanSetting(
+MCM.AddBooleanSetting(
 	"General", --category
 	"BigBooks", --attribute in table
 	true, --default value
@@ -1163,7 +1160,7 @@ ModConfigMenu.AddBooleanSetting(
 ---------------------
 --ANNOUNCER SETTING--
 ---------------------
-ModConfigMenu.AddNumberSetting(
+MCM.AddNumberSetting(
 	"General", --category
 	"Announcer", --attribute in table
 	0, --minimum value
@@ -1183,27 +1180,27 @@ ModConfigMenu.AddNumberSetting(
 --GENERAL SETTINGS CLOSE--
 --------------------------
 
-ModConfigMenu.AddSpace("General") --SPACE
+MCM.AddSpace("General") --SPACE
 
-ModConfigMenu.AddText("General", "These settings apply to")
-ModConfigMenu.AddText("General", "all mods which support them")
+MCM.AddText("General", "These settings apply to")
+MCM.AddText("General", "all mods which support them")
 
 
 ----------------------------------
 --MOD CONFIG MENU SETTINGS SETUP--
 ----------------------------------
 
-ModConfigMenu.SetCategoryInfo("Mod Config Menu", "Settings specific to Mod Config Menu.$newlineChange keybindings for the menu here.")
+MCM.SetCategoryInfo("Mod Config Menu", "Settings specific to Mod Config Menu.$newlineChange keybindings for the menu here.")
 
-ModConfigMenu.AddTitle("Mod Config Menu", "Version " .. tostring(ModConfigMenu.Version) .. " !") --VERSION INDICATOR
+MCM.AddTitle("Mod Config Menu", "Version " .. tostring(MCM.Version) .. " !") --VERSION INDICATOR
 
-ModConfigMenu.AddSpace("Mod Config Menu") --SPACE
+MCM.AddSpace("Mod Config Menu") --SPACE
 
 
 ----------------------
 --OPEN MENU KEYBOARD--
 ----------------------
-local openMenuKeyboardSetting = ModConfigMenu.AddKeyboardSetting(
+local openMenuKeyboardSetting = MCM.AddKeyboardSetting(
 	"Mod Config Menu", --category
 	"OpenMenuKeyboard", --attribute in table
 	Keyboard.KEY_L, --default value
@@ -1218,7 +1215,7 @@ openMenuKeyboardSetting.IsOpenMenuKeybind = true
 ------------------------
 --OPEN MENU CONTROLLER--
 ------------------------
-local openMenuControllerSetting = ModConfigMenu.AddControllerSetting(
+local openMenuControllerSetting = MCM.AddControllerSetting(
 	"Mod Config Menu", --category
 	"OpenMenuController", --attribute in table
 	Controller.STICK_RIGHT, --default value
@@ -1230,15 +1227,15 @@ local openMenuControllerSetting = ModConfigMenu.AddControllerSetting(
 openMenuControllerSetting.IsOpenMenuKeybind = true
 
 --f10 note
-ModConfigMenu.AddText("Mod Config Menu", "F10 will always open this menu.")
+MCM.AddText("Mod Config Menu", "F10 will always open this menu.")
 
-ModConfigMenu.AddSpace("Mod Config Menu") --SPACE
+MCM.AddSpace("Mod Config Menu") --SPACE
 
 
 ------------
 --HIDE HUD--
 ------------
-local hideHudSetting = ModConfigMenu.AddBooleanSetting(
+local hideHudSetting = MCM.AddBooleanSetting(
 	"Mod Config Menu", --category
 	"HideHudInMenu", --attribute in table
 	true, --default value
@@ -1275,7 +1272,7 @@ end
 ----------------------------
 --RESET TO DEFAULT KEYBIND--
 ----------------------------
-local resetKeybindSetting = ModConfigMenu.AddKeyboardSetting(
+local resetKeybindSetting = MCM.AddKeyboardSetting(
 	"Mod Config Menu", --category
 	"ResetToDefault", --attribute in table
 	Keyboard.KEY_R, --default value
@@ -1289,7 +1286,7 @@ resetKeybindSetting.IsResetKeybind = true
 -----------------
 --SHOW CONTROLS--
 -----------------
-ModConfigMenu.AddBooleanSetting(
+MCM.AddBooleanSetting(
 	"Mod Config Menu", --category
 	"ShowControls", --attribute in table
 	true, --default value
@@ -1301,13 +1298,13 @@ ModConfigMenu.AddBooleanSetting(
 	"Disable this to remove the back and select widgets at the lower corners of the screen and remove the bottom start-up message."
 )
 
-ModConfigMenu.AddSpace("Mod Config Menu") --SPACE
+MCM.AddSpace("Mod Config Menu") --SPACE
 
 
 -----------------
 --COMPATIBILITY--
 -----------------
-local compatibilitySetting = ModConfigMenu.AddBooleanSetting(
+local compatibilitySetting = MCM.AddBooleanSetting(
 	"Mod Config Menu", --category
 	"CompatibilityLayer", --attribute in table
 	false, --default value
@@ -1352,8 +1349,8 @@ local currentMenuCategory = nil
 local currentMenuSubcategory = nil
 local currentMenuOption = nil
 local function updateCurrentMenuVars()
-	if ModConfigMenu.MenuData[configMenuPositionCursorCategory] then
-		currentMenuCategory = ModConfigMenu.MenuData[configMenuPositionCursorCategory]
+	if MCM.MenuData[configMenuPositionCursorCategory] then
+		currentMenuCategory = MCM.MenuData[configMenuPositionCursorCategory]
 		if currentMenuCategory.Subcategories and currentMenuCategory.Subcategories[configMenuPositionCursorSubcategory] then
 			currentMenuSubcategory = currentMenuCategory.Subcategories[configMenuPositionCursorSubcategory]
 			if currentMenuSubcategory.Options and currentMenuSubcategory.Options[configMenuPositionCursorOption] then
@@ -1364,17 +1361,17 @@ local function updateCurrentMenuVars()
 end
 
 --leaving/entering menu sections
-function ModConfigMenu.EnterPopup()
+function MCM.EnterPopup()
 	if configMenuInSubcategory and configMenuInOptions and not configMenuInPopup then
 		local foundValidPopup = false
 		if currentMenuOption
 		and currentMenuOption.Type
-		and currentMenuOption.Type ~= ModConfigMenu.OptionType.SPACE
+		and currentMenuOption.Type ~= MCM.OptionType.SPACE
 		and (currentMenuOption.Popup or currentMenuOption.Restart or currentMenuOption.Rerun) then
 			foundValidPopup = true
 		end
 		if foundValidPopup then
-			local popupSpritesheet = ModConfigMenu.PopupGfx.THIN_SMALL
+			local popupSpritesheet = MCM.PopupGfx.THIN_SMALL
 			if currentMenuOption.PopupGfx and type(currentMenuOption.PopupGfx) == "string" then
 				popupSpritesheet = currentMenuOption.PopupGfx
 			end
@@ -1385,7 +1382,7 @@ function ModConfigMenu.EnterPopup()
 	end
 end
 
-function ModConfigMenu.EnterOptions()
+function MCM.EnterOptions()
 	if configMenuInSubcategory and not configMenuInOptions then
 		if currentMenuSubcategory
 		and currentMenuSubcategory.Options
@@ -1396,7 +1393,7 @@ function ModConfigMenu.EnterOptions()
 				local thisOption = currentMenuSubcategory.Options[optionIndex]
 				
 				if thisOption.Type
-				and thisOption.Type ~= ModConfigMenu.OptionType.SPACE
+				and thisOption.Type ~= MCM.OptionType.SPACE
 				and (not thisOption.NoCursorHere or (type(thisOption.NoCursorHere) == "function" and not thisOption.NoCursorHere()))
 				and thisOption.Display then
 				
@@ -1412,7 +1409,7 @@ function ModConfigMenu.EnterOptions()
 	end
 end
 
-function ModConfigMenu.EnterSubcategory()
+function MCM.EnterSubcategory()
 	if not configMenuInSubcategory then
 		configMenuInSubcategory = true
 		SubcategoryCursorSpriteLeft.Color = colorDefault
@@ -1429,14 +1426,14 @@ function ModConfigMenu.EnterSubcategory()
 		end
 		
 		if not hasUsableCategories then
-			ModConfigMenu.EnterOptions()
+			MCM.EnterOptions()
 		end
 	end
 end
 
 local restartWarnMessage = nil
 local rerunWarnMessage = nil
-function ModConfigMenu.LeavePopup()
+function MCM.LeavePopup()
 	if configMenuInSubcategory and configMenuInOptions and configMenuInPopup then
 		
 		if currentMenuOption then
@@ -1458,7 +1455,7 @@ function ModConfigMenu.LeavePopup()
 	end
 end
 
-function ModConfigMenu.LeaveOptions()
+function MCM.LeaveOptions()
 	if configMenuInSubcategory and configMenuInOptions then
 		configMenuInOptions = false
 		OptionsCursorSpriteUp.Color = colorHalf
@@ -1474,12 +1471,12 @@ function ModConfigMenu.LeaveOptions()
 		end
 		
 		if not hasUsableCategories then
-			ModConfigMenu.LeaveSubcategory()
+			MCM.LeaveSubcategory()
 		end
 	end
 end
 
-function ModConfigMenu.LeaveSubcategory()
+function MCM.LeaveSubcategory()
 	if configMenuInSubcategory then
 		configMenuInSubcategory = false
 		SubcategoryCursorSpriteLeft.Color = colorHalf
@@ -1507,7 +1504,7 @@ local subcategoryFontColorSelected = KColor(34/255,50/255,70/255,1)
 local subcategoryFontColorAlpha = KColor(34/255,32/255,30/255,0.5)
 local subcategoryFontColorSelectedAlpha = KColor(34/255,50/255,70/255,0.5)
 
-function ModConfigMenu.ConvertDisplayToTextTable(displayValue, lineWidth, font)
+function MCM.ConvertDisplayToTextTable(displayValue, lineWidth, font)
 
 	lineWidth = lineWidth or 340
 
@@ -1582,16 +1579,16 @@ function ModConfigMenu.ConvertDisplayToTextTable(displayValue, lineWidth, font)
 end
 
 --set up screen corner display for hud offset
-local HudOffsetVisualTopLeft = ModConfigMenu.GetMenuAnm2Sprite("Offset", 0)
-local HudOffsetVisualTopRight = ModConfigMenu.GetMenuAnm2Sprite("Offset", 1)
-local HudOffsetVisualBottomRight = ModConfigMenu.GetMenuAnm2Sprite("Offset", 2)
-local HudOffsetVisualBottomLeft = ModConfigMenu.GetMenuAnm2Sprite("Offset", 3)
+local HudOffsetVisualTopLeft = MCM.GetMenuAnm2Sprite("Offset", 0)
+local HudOffsetVisualTopRight = MCM.GetMenuAnm2Sprite("Offset", 1)
+local HudOffsetVisualBottomRight = MCM.GetMenuAnm2Sprite("Offset", 2)
+local HudOffsetVisualBottomLeft = MCM.GetMenuAnm2Sprite("Offset", 3)
 
 --render the menu
 local leftCurrentOffset = 0
 local optionsCurrentOffset = 0
-ModConfigMenu.ControlsEnabled = true
-function ModConfigMenu.PostRender()
+MCM.ControlsEnabled = true
+function MCM.PostRender()
 
 	local game = Game()
 	local isPaused = game:IsPaused()
@@ -1604,8 +1601,8 @@ function ModConfigMenu.PostRender()
 	local pressedToggleMenu = false
 
 	local openMenuGlobal = Keyboard.KEY_F10
-	local openMenuKeyboard = ModConfigMenu.Config["Mod Config Menu"].OpenMenuKeyboard
-	local openMenuController = ModConfigMenu.Config["Mod Config Menu"].OpenMenuController
+	local openMenuKeyboard = MCM.Config["Mod Config Menu"].OpenMenuKeyboard
+	local openMenuController = MCM.Config["Mod Config Menu"].OpenMenuController
 	
 	local takeScreenshot = Keyboard.KEY_F12
 
@@ -1615,8 +1612,8 @@ function ModConfigMenu.PostRender()
 		local bottomRight = ScreenHelper.GetScreenBottomRight(0)
 
 		local openMenuButton = Keyboard.KEY_F10
-		if type(ModConfigMenu.Config["Mod Config Menu"].OpenMenuKeyboard) == "number" and ModConfigMenu.Config["Mod Config Menu"].OpenMenuKeyboard > -1 then
-			openMenuButton = ModConfigMenu.Config["Mod Config Menu"].OpenMenuKeyboard
+		if type(MCM.Config["Mod Config Menu"].OpenMenuKeyboard) == "number" and MCM.Config["Mod Config Menu"].OpenMenuKeyboard > -1 then
+			openMenuButton = MCM.Config["Mod Config Menu"].OpenMenuKeyboard
 		end
 
 		local openMenuButtonString = "Unknown Key"
@@ -1642,7 +1639,7 @@ function ModConfigMenu.PostRender()
 	end
 
 	--handle toggling the menu
-	if ModConfigMenu.ControlsEnabled and not isPaused then
+	if MCM.ControlsEnabled and not isPaused then
 	
 		for i=0, 4 do
 		
@@ -1652,7 +1649,7 @@ function ModConfigMenu.PostRender()
 				pressingNonRebindableKey = true
 				pressedToggleMenu = true
 				if not configMenuInPopup then
-					ModConfigMenu.ToggleConfigMenu()
+					MCM.ToggleConfigMenu()
 				end
 			end
 			
@@ -1665,17 +1662,17 @@ function ModConfigMenu.PostRender()
 	end
 	
 	--force close the menu in some situations
-	if ModConfigMenu.IsVisible then
+	if MCM.IsVisible then
 	
 		if isPaused then
 		
-			ModConfigMenu.CloseConfigMenu()
+			MCM.CloseConfigMenu()
 			
 		end
 		
-		if not ModConfigMenu.RoomIsSafe() then
+		if not MCM.RoomIsSafe() then
 		
-			ModConfigMenu.CloseConfigMenu()
+			MCM.CloseConfigMenu()
 			
 			sfx:Play(SoundEffect.SOUND_BOSS2INTRO_ERRORBUZZ, 0.75, 0, false, 1)
 			
@@ -1704,9 +1701,9 @@ function ModConfigMenu.PostRender()
 		
 	end
 	
-	if ModConfigMenu.IsVisible then
+	if MCM.IsVisible then
 	
-		if ModConfigMenu.ControlsEnabled and not isPaused then
+		if MCM.ControlsEnabled and not isPaused then
 		
 			for i=0, game:GetNumPlayers()-1 do
 		
@@ -1755,7 +1752,7 @@ function ModConfigMenu.PostRender()
 					pressingButton = "BACK"
 					local possiblyPressedButton = InputHelper.MultipleKeyboardTriggered(Keyboard)
 					if possiblyPressedButton then
-						ModConfigMenu.Config.LastBackPressed = possiblyPressedButton
+						MCM.Config.LastBackPressed = possiblyPressedButton
 					end
 				end
 				local selectButtonPressed = InputHelper.MultipleActionTriggered(actionsSelect)
@@ -1763,10 +1760,10 @@ function ModConfigMenu.PostRender()
 					pressingButton = "SELECT"
 					local possiblyPressedButton = InputHelper.MultipleKeyboardTriggered(Keyboard)
 					if possiblyPressedButton then
-						ModConfigMenu.Config.LastSelectPressed = possiblyPressedButton
+						MCM.Config.LastSelectPressed = possiblyPressedButton
 					end
 				end
-				if ModConfigMenu.Config["Mod Config Menu"].ResetToDefault > -1 and InputHelper.MultipleKeyboardTriggered({ModConfigMenu.Config["Mod Config Menu"].ResetToDefault}) then
+				if MCM.Config["Mod Config Menu"].ResetToDefault > -1 and InputHelper.MultipleKeyboardTriggered({MCM.Config["Mod Config Menu"].ResetToDefault}) then
 					pressingButton = "RESET"
 				end
 				
@@ -1844,8 +1841,8 @@ function ModConfigMenu.PostRender()
 				local optionCurrent = currentMenuOption.CurrentSetting
 				local optionOnChange = currentMenuOption.OnChange
 
-				if optionType == ModConfigMenu.OptionType.KEYBIND_KEYBOARD
-				or optionType == ModConfigMenu.OptionType.KEYBIND_CONTROLLER
+				if optionType == MCM.OptionType.KEYBIND_KEYBOARD
+				or optionType == MCM.OptionType.KEYBIND_CONTROLLER
 				or currentMenuOption.OnSelect then
 
 					if not isPaused then
@@ -1860,7 +1857,7 @@ function ModConfigMenu.PostRender()
 						else
 							local numberToChange = nil
 							local recievedInput = false
-							if optionType == ModConfigMenu.OptionType.KEYBIND_KEYBOARD or optionType == ModConfigMenu.OptionType.KEYBIND_CONTROLLER then
+							if optionType == MCM.OptionType.KEYBIND_KEYBOARD or optionType == MCM.OptionType.KEYBIND_CONTROLLER then
 								numberToChange = optionCurrent
 								
 								if type(optionCurrent) == "function" then
@@ -1872,7 +1869,7 @@ function ModConfigMenu.PostRender()
 									recievedInput = true
 								else
 									for i=0, 4 do
-										if optionType == ModConfigMenu.OptionType.KEYBIND_KEYBOARD then
+										if optionType == MCM.OptionType.KEYBIND_KEYBOARD then
 											for j=32, 400 do
 												if InputHelper.KeyboardTriggered(j, i) then
 													numberToChange = j
@@ -1902,7 +1899,7 @@ function ModConfigMenu.PostRender()
 							end
 							
 							if recievedInput then
-								if optionType == ModConfigMenu.OptionType.KEYBIND_KEYBOARD or optionType == ModConfigMenu.OptionType.KEYBIND_CONTROLLER then
+								if optionType == MCM.OptionType.KEYBIND_KEYBOARD or optionType == MCM.OptionType.KEYBIND_CONTROLLER then
 								
 									if type(optionCurrent) == "function" then
 										if optionOnChange then
@@ -1984,7 +1981,7 @@ function ModConfigMenu.PostRender()
 					local optionCurrent = currentMenuOption.CurrentSetting
 					local optionOnChange = currentMenuOption.OnChange
 					
-					if optionType == ModConfigMenu.OptionType.SCROLL or optionType == ModConfigMenu.OptionType.NUMBER then
+					if optionType == MCM.OptionType.SCROLL or optionType == MCM.OptionType.NUMBER then
 						leaveOptions = false
 						
 						local numberToChange = optionCurrent
@@ -2010,7 +2007,7 @@ function ModConfigMenu.PostRender()
 							end
 						end
 						
-						if optionType == ModConfigMenu.OptionType.SCROLL then
+						if optionType == MCM.OptionType.SCROLL then
 							numberToChange = math.max(math.min(math.floor(numberToChange), 10), 0)
 						else
 							if currentMenuOption.Maximum and numberToChange > currentMenuOption.Maximum then
@@ -2061,7 +2058,7 @@ function ModConfigMenu.PostRender()
 						if sound >= 0 then
 							sfx:Play(sound, 1, 0, false, 1)
 						end
-					elseif optionType == ModConfigMenu.OptionType.BOOLEAN then
+					elseif optionType == MCM.OptionType.BOOLEAN then
 						leaveOptions = false
 						
 						local boolToChange = optionCurrent
@@ -2105,7 +2102,7 @@ function ModConfigMenu.PostRender()
 						if sound >= 0 then
 							sfx:Play(sound, 1, 0, false, 1)
 						end
-					elseif (optionType == ModConfigMenu.OptionType.KEYBIND_KEYBOARD or optionType == ModConfigMenu.OptionType.KEYBIND_CONTROLLER) and pressingButton == "RESET" and currentMenuOption.Default ~= nil then
+					elseif (optionType == MCM.OptionType.KEYBIND_KEYBOARD or optionType == MCM.OptionType.KEYBIND_CONTROLLER) and pressingButton == "RESET" and currentMenuOption.Default ~= nil then
 						local numberToChange = optionCurrent
 						
 						if type(optionCurrent) == "function" then
@@ -2143,7 +2140,7 @@ function ModConfigMenu.PostRender()
 						if sound >= 0 then
 							sfx:Play(sound, 1, 0, false, 1)
 						end
-					elseif optionType ~= ModConfigMenu.OptionType.SPACE and pressingButton == "RIGHT" then
+					elseif optionType ~= MCM.OptionType.SPACE and pressingButton == "RIGHT" then
 						if currentMenuOption.Popup then
 							enterPopup = true
 						elseif currentMenuOption.OnSelect then
@@ -2233,7 +2230,7 @@ function ModConfigMenu.PostRender()
 			
 			--confirmed back press
 			if pressingButton == "BACK" then
-				ModConfigMenu.CloseConfigMenu()
+				MCM.CloseConfigMenu()
 			end
 			
 			--confirmed select press
@@ -2244,32 +2241,32 @@ function ModConfigMenu.PostRender()
 		
 		--entering popup
 		if enterPopup then
-			ModConfigMenu.EnterPopup()
+			MCM.EnterPopup()
 		end
 		
 		--leaving popup
 		if leavePopup then
-			ModConfigMenu.LeavePopup()
+			MCM.LeavePopup()
 		end
 		
 		--entering subcategory
 		if enterSubcategory then
-			ModConfigMenu.EnterSubcategory()
+			MCM.EnterSubcategory()
 		end
 		
 		--entering options
 		if enterOptions then
-			ModConfigMenu.EnterOptions()
+			MCM.EnterOptions()
 		end
 		
 		--leaving options
 		if leaveOptions then
-			ModConfigMenu.LeaveOptions()
+			MCM.LeaveOptions()
 		end
 		
 		--leaving subcategory
 		if leaveSubcategory then
-			ModConfigMenu.LeaveSubcategory()
+			MCM.LeaveSubcategory()
 		end
 		
 		--category cursor position was changed
@@ -2278,9 +2275,9 @@ function ModConfigMenu.PostRender()
 			
 				--cursor position
 				if configMenuPositionCursorCategory < 1 then --move from the top of the list to the bottom
-					configMenuPositionCursorCategory = #ModConfigMenu.MenuData
+					configMenuPositionCursorCategory = #MCM.MenuData
 				end
-				if configMenuPositionCursorCategory > #ModConfigMenu.MenuData then --move from the bottom of the list to the top
+				if configMenuPositionCursorCategory > #MCM.MenuData then --move from the bottom of the list to the top
 					configMenuPositionCursorCategory = 1
 				end
 				
@@ -2337,7 +2334,7 @@ function ModConfigMenu.PostRender()
 					
 					if thisOption
 					and thisOption.Type
-					and thisOption.Type ~= ModConfigMenu.OptionType.SPACE
+					and thisOption.Type ~= MCM.OptionType.SPACE
 					and (not thisOption.NoCursorHere or (type(thisOption.NoCursorHere) == "function" and not thisOption.NoCursorHere()))
 					and thisOption.Display then
 						
@@ -2388,7 +2385,7 @@ function ModConfigMenu.PostRender()
 		local leftCanScrollUp = false
 		local leftCanScrollDown = false
 		
-		local numLeft = #ModConfigMenu.MenuData
+		local numLeft = #MCM.MenuData
 		
 		local leftPos = centerPos + Vector(-142,-102)
 		local leftPosTopmost = centerPos.Y - 116
@@ -2526,19 +2523,19 @@ function ModConfigMenu.PostRender()
 		if configMenuInOptions and currentMenuOption and currentMenuOption.HideControls then
 			shouldShowControls = false
 		end
-		if not ModConfigMenu.Config["Mod Config Menu"].ShowControls then
+		if not MCM.Config["Mod Config Menu"].ShowControls then
 			shouldShowControls = false
 		end
 		
 		--category
 		local lastLeftPos = leftPos
 		local renderedLeft = 0
-		for categoryIndex=1, #ModConfigMenu.MenuData do
+		for categoryIndex=1, #MCM.MenuData do
 		
 			--text
 			if lastLeftPos.Y > leftPosTopmost and lastLeftPos.Y < leftPosBottommost then
 			
-				local textToDraw = tostring(ModConfigMenu.MenuData[categoryIndex].Name)
+				local textToDraw = tostring(MCM.MenuData[categoryIndex].Name)
 				
 				local color = leftFontColor
 				--[[
@@ -2707,7 +2704,7 @@ function ModConfigMenu.PostRender()
 				if lastOptionPos.Y > optionPosTopmost and lastOptionPos.Y < optionPosBottommost then
 					
 					if thisOption.Type
-					and thisOption.Type ~= ModConfigMenu.OptionType.SPACE
+					and thisOption.Type ~= MCM.OptionType.SPACE
 					and thisOption.Display then
 					
 						local optionType = thisOption.Type
@@ -2717,12 +2714,12 @@ function ModConfigMenu.PostRender()
 						local useAltSlider = thisOption.AltSlider
 						
 						--get what to draw
-						if optionType == ModConfigMenu.OptionType.TEXT
-						or optionType == ModConfigMenu.OptionType.BOOLEAN
-						or optionType == ModConfigMenu.OptionType.NUMBER
-						or optionType == ModConfigMenu.OptionType.KEYBIND_KEYBOARD
-						or optionType == ModConfigMenu.OptionType.KEYBIND_CONTROLLER
-						or optionType == ModConfigMenu.OptionType.TITLE then
+						if optionType == MCM.OptionType.TEXT
+						or optionType == MCM.OptionType.BOOLEAN
+						or optionType == MCM.OptionType.NUMBER
+						or optionType == MCM.OptionType.KEYBIND_KEYBOARD
+						or optionType == MCM.OptionType.KEYBIND_CONTROLLER
+						or optionType == MCM.OptionType.TITLE then
 							local textToDraw = optionDisplay
 							
 							if type(optionDisplay) == "function" then
@@ -2743,7 +2740,7 @@ function ModConfigMenu.PostRender()
 							elseif thisOption.NoCursorHere then
 								color = optionsFontColorNoCursor
 							end
-							if optionType == ModConfigMenu.OptionType.TITLE then
+							if optionType == MCM.OptionType.TITLE then
 								heightOffset = 8
 								font = Font12
 								color = optionsFontColorTitle
@@ -2758,7 +2755,7 @@ function ModConfigMenu.PostRender()
 							
 							posOffset = font:GetStringWidthUTF8(textToDraw)/2
 							font:DrawString(textToDraw, lastOptionPos.X - posOffset, lastOptionPos.Y - heightOffset, color, 0, true)
-						elseif optionType == ModConfigMenu.OptionType.SCROLL then
+						elseif optionType == MCM.OptionType.SCROLL then
 							local numberToShow = optionDisplay
 							
 							if type(optionDisplay) == "function" then
@@ -2910,7 +2907,7 @@ function ModConfigMenu.PostRender()
 				lineWidth = 260
 			end
 			
-			local infoTableDisplay = ModConfigMenu.ConvertDisplayToTextTable(infoTable, lineWidth, Font10)
+			local infoTableDisplay = MCM.ConvertDisplayToTextTable(infoTable, lineWidth, Font10)
 			
 			local lastInfoPos = infoPos - Vector(0,6*#infoTableDisplay)
 			for line=1, #infoTableDisplay do
@@ -2974,7 +2971,7 @@ function ModConfigMenu.PostRender()
 				
 				local lineWidth = currentMenuOption.PopupWidth or 180
 				
-				local popupTableDisplay = ModConfigMenu.ConvertDisplayToTextTable(popupTable, lineWidth, Font10)
+				local popupTableDisplay = MCM.ConvertDisplayToTextTable(popupTable, lineWidth, Font10)
 				
 				local lastPopupPos = (centerPos + Vector(0,2)) - Vector(0,6*#popupTableDisplay)
 				for line=1, #popupTableDisplay do
@@ -3005,11 +3002,11 @@ function ModConfigMenu.PostRender()
 			end
 
 			local goBackString = ""
-			if ModConfigMenu.Config.LastBackPressed then
-				if InputHelper.KeyboardToString[ModConfigMenu.Config.LastBackPressed] then
-					goBackString = InputHelper.KeyboardToString[ModConfigMenu.Config.LastBackPressed]
-				elseif InputHelper.ControllerToString[ModConfigMenu.Config.LastBackPressed] then
-					goBackString = InputHelper.ControllerToString[ModConfigMenu.Config.LastBackPressed]
+			if MCM.Config.LastBackPressed then
+				if InputHelper.KeyboardToString[MCM.Config.LastBackPressed] then
+					goBackString = InputHelper.KeyboardToString[MCM.Config.LastBackPressed]
+				elseif InputHelper.ControllerToString[MCM.Config.LastBackPressed] then
+					goBackString = InputHelper.ControllerToString[MCM.Config.LastBackPressed]
 				end
 			end
 			Font10:DrawString(goBackString, (bottomLeft.X - Font10:GetStringWidthUTF8(goBackString)/2) + 36, bottomLeft.Y - 24, mainFontColor, 0, true)
@@ -3024,7 +3021,7 @@ function ModConfigMenu.PostRender()
 				and configMenuInOptions
 				and currentMenuOption
 				and currentMenuOption.Type
-				and currentMenuOption.Type ~= ModConfigMenu.OptionType.SPACE
+				and currentMenuOption.Type ~= MCM.OptionType.SPACE
 				and currentMenuOption.Popup then
 					foundValidPopup = true
 				end
@@ -3037,11 +3034,11 @@ function ModConfigMenu.PostRender()
 				end
 				
 				local selectString = ""
-				if ModConfigMenu.Config.LastSelectPressed then
-					if InputHelper.KeyboardToString[ModConfigMenu.Config.LastSelectPressed] then
-						selectString = InputHelper.KeyboardToString[ModConfigMenu.Config.LastSelectPressed]
-					elseif InputHelper.ControllerToString[ModConfigMenu.Config.LastSelectPressed] then
-						selectString = InputHelper.ControllerToString[ModConfigMenu.Config.LastSelectPressed]
+				if MCM.Config.LastSelectPressed then
+					if InputHelper.KeyboardToString[MCM.Config.LastSelectPressed] then
+						selectString = InputHelper.KeyboardToString[MCM.Config.LastSelectPressed]
+					elseif InputHelper.ControllerToString[MCM.Config.LastSelectPressed] then
+						selectString = InputHelper.ControllerToString[MCM.Config.LastSelectPressed]
 					end
 				end
 				Font10:DrawString(selectString, (bottomRight.X - Font10:GetStringWidthUTF8(selectString)/2) - 36, bottomRight.Y - 24, mainFontColor, 0, true)
@@ -3088,13 +3085,13 @@ function ModConfigMenu.PostRender()
 		
 	end
 end
-ModConfigMenu.Mod:AddCallback(ModCallbacks.MC_POST_RENDER, ModConfigMenu.PostRender)
+MCM.Mod:AddCallback(ModCallbacks.MC_POST_RENDER, MCM.PostRender)
 
-function ModConfigMenu.OpenConfigMenu()
+function MCM.OpenConfigMenu()
 
-	if ModConfigMenu.RoomIsSafe() then
+	if MCM.RoomIsSafe() then
 	
-		if ModConfigMenu.Config["Mod Config Menu"].HideHudInMenu then
+		if MCM.Config["Mod Config Menu"].HideHudInMenu then
 		
 			local game = Game()
 			local seeds = game:GetSeeds()
@@ -3102,7 +3099,7 @@ function ModConfigMenu.OpenConfigMenu()
 			
 		end
 		
-		ModConfigMenu.IsVisible = true
+		MCM.IsVisible = true
 		
 	else
 	
@@ -3113,32 +3110,32 @@ function ModConfigMenu.OpenConfigMenu()
 	
 end
 
-function ModConfigMenu.CloseConfigMenu()
+function MCM.CloseConfigMenu()
 
-	ModConfigMenu.LeavePopup()
-	ModConfigMenu.LeaveOptions()
-	ModConfigMenu.LeaveSubcategory()
+	MCM.LeavePopup()
+	MCM.LeaveOptions()
+	MCM.LeaveSubcategory()
 	
 	local game = Game()
 	local seeds = game:GetSeeds()
 	seeds:RemoveSeedEffect(SeedEffect.SEED_NO_HUD)
 	
 	
-	ModConfigMenu.IsVisible = false
+	MCM.IsVisible = false
 	
 end
 
-function ModConfigMenu.ToggleConfigMenu()
-	if ModConfigMenu.IsVisible then
-		ModConfigMenu.CloseConfigMenu()
+function MCM.ToggleConfigMenu()
+	if MCM.IsVisible then
+		MCM.CloseConfigMenu()
 	else
-		ModConfigMenu.OpenConfigMenu()
+		MCM.OpenConfigMenu()
 	end
 end
 
-function ModConfigMenu.InputAction(_, entity, inputHook, buttonAction)
+function MCM.InputAction(_, entity, inputHook, buttonAction)
 
-	if ModConfigMenu.IsVisible and buttonAction ~= ButtonAction.ACTION_FULLSCREEN and buttonAction ~= ButtonAction.ACTION_CONSOLE then
+	if MCM.IsVisible and buttonAction ~= ButtonAction.ACTION_FULLSCREEN and buttonAction ~= ButtonAction.ACTION_CONSOLE then
 	
 		if inputHook == InputHook.IS_ACTION_PRESSED or inputHook == InputHook.IS_ACTION_TRIGGERED then 
 			return false
@@ -3149,7 +3146,7 @@ function ModConfigMenu.InputAction(_, entity, inputHook, buttonAction)
 	end
 	
 end
-ModConfigMenu.Mod:AddCallback(ModCallbacks.MC_INPUT_ACTION, ModConfigMenu.InputAction)
+MCM.Mod:AddCallback(ModCallbacks.MC_INPUT_ACTION, MCM.InputAction)
 
 --console commands that toggle the menu
 local toggleCommands = {
@@ -3158,18 +3155,18 @@ local toggleCommands = {
 	["mcm"] = true,
 	["mc"] = true
 }
-function ModConfigMenu.ExecuteCmd(_, command, args)
+function MCM.ExecuteCmd(_, command, args)
 
 	command = command:lower()
 	
 	if toggleCommands[command] then
 	
-		ModConfigMenu.ToggleConfigMenu()
+		MCM.ToggleConfigMenu()
 		
 	end
 	
 end
-ModConfigMenu.Mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, ModConfigMenu.ExecuteCmd)
+MCM.Mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, MCM.ExecuteCmd)
 
 local function exec(path)
 	if type(include) == "function" then -- trick to try to detect if we're on repentance
@@ -3179,14 +3176,14 @@ local function exec(path)
 	end
 end
 
-if ModConfigMenu.StandaloneMod then
+if MCM.StandaloneMod then
 
-	if not ModConfigMenu.StandaloneSaveLoaded then
-		SaveHelper.Load(ModConfigMenu.StandaloneMod)
-		ModConfigMenu.StandaloneSaveLoaded = true
+	if not MCM.StandaloneSaveLoaded then
+		SaveHelper.Load(MCM.StandaloneMod)
+		MCM.StandaloneSaveLoaded = true
 	end
 	
-	if not ModConfigMenu.CompatibilityMode then
+	if not MCM.CompatibilityMode then
 		exec("scripts/modconfigoldcompatibility")
 	end
 
@@ -3196,8 +3193,8 @@ end
 ------------
 --FINISHED--
 ------------
-Isaac.DebugString("Mod Config Menu v" .. ModConfigMenu.Version .. " loaded!")
-print("Mod Config Menu v" .. ModConfigMenu.Version .. " loaded!")
+Isaac.DebugString("Mod Config Menu v" .. MCM.Version .. " loaded!")
+print("Mod Config Menu v" .. MCM.Version .. " loaded!")
 
 
-return ModConfigMenu
+return MCM
