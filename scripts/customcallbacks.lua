@@ -11,7 +11,7 @@
 -------------
 -- version --
 -------------
-local fileVersion = 3
+local fileVersion = 4
 
 --prevent older/same version versions of this script from loading
 if CustomCallbackHelper and CustomCallbackHelper.Version >= fileVersion then
@@ -354,6 +354,8 @@ function CustomCallbackHelper.RegisterMod(mod, modname, apiversion)
 		CustomCallbackHelper.ExtendMod(mod)
 
 	end
+
+	return returned
 	
 end
 Isaac.RegisterMod = CustomCallbackHelper.RegisterMod
