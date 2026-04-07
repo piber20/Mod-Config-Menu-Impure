@@ -112,6 +112,47 @@ end
 --create the mod
 MCM.Mod = MCM.Mod or RegisterMod("Mod Config Menu", 1)
 
+
+----------
+--Tables--
+----------
+function MCM.CopyTable(tableToCopy)
+	local table2 = {}
+	for i, value in pairs(tableToCopy) do
+		if type(value) == "table" then
+			table2[i] = MCM.CopyTable(value)
+		else
+			table2[i] = value
+		end
+	end
+	return table2
+end
+
+function MCM.FillTable(tableToFill, tableToFillFrom)
+	for i, value in pairs(tableToFillFrom) do
+		if tableToFill[i] ~= nil then
+			if type(value) == "table" then
+				if type(tableToFill[i]) ~= "table" then
+					tableToFill[i] = {}
+				end
+				tableToFill[i] = MCM.FillTable(tableToFill[i], value)
+			else
+				tableToFill[i] = value
+			end
+		else
+			if type(value) == "table" then
+				if type(tableToFill[i]) ~= "table" then
+					tableToFill[i] = {}
+				end
+				tableToFill[i] = MCM.FillTable({}, value)
+			else
+				tableToFill[i] = value
+			end
+		end
+	end
+	return tableToFill
+end
+
 ---------
 --Input--
 ---------
@@ -267,7 +308,7 @@ CustomCallbacks.MCM_POST_MODIFY_SETTING = 4200
 MCM.SetConfigMetatables = MCM.SetConfigMetatables or function() return end
 
 MCM.ConfigDefault = MCM.ConfigDefault or {}
-SaveHelper.FillTable(MCM.ConfigDefault,{
+MCM.FillTable(MCM.ConfigDefault,{
 	
 	--last button pressed tracker
 	LastBackPressed = Keyboard.KEY_ESCAPE,
@@ -275,14 +316,14 @@ SaveHelper.FillTable(MCM.ConfigDefault,{
 	
 })
 MCM.Config = MCM.Config or {}
-SaveHelper.FillTable(MCM.Config, MCM.ConfigDefault)
+MCM.FillTable(MCM.Config, MCM.ConfigDefault)
 
 MCM.SetConfigMetatables()
 
 function MCM.GetSave()
 	
-	local saveData = SaveHelper.CopyTable(MCM.ConfigDefault)
-	saveData = SaveHelper.FillTable(saveData, MCM.Config)
+	local saveData = MCM.CopyTable(MCM.ConfigDefault)
+	saveData = MCM.FillTable(saveData, MCM.Config)
 	
 	saveData = json.encode(saveData)
 	
@@ -294,17 +335,17 @@ function MCM.LoadSave(fromData)
 
 	if fromData and ((type(fromData) == "string" and json.decode(fromData)) or type(fromData) == "table") then
 	
-		local saveData = SaveHelper.CopyTable(MCM.ConfigDefault)
+		local saveData = MCM.CopyTable(MCM.ConfigDefault)
 		
 		if type(fromData) == "string" then
 			fromData = json.decode(fromData)
 		end
-		saveData = SaveHelper.FillTable(saveData, fromData)
+		saveData = MCM.FillTable(saveData, fromData)
 		
-		local currentData = SaveHelper.CopyTable(MCM.Config)
-		saveData = SaveHelper.FillTable(currentData, saveData)
+		local currentData = MCM.CopyTable(MCM.Config)
+		saveData = MCM.FillTable(currentData, saveData)
 		
-		MCM.Config = SaveHelper.CopyTable(saveData)
+		MCM.Config = MCM.CopyTable(saveData)
 		MCM.SetConfigMetatables()
 		if Options then
 			MCM.CurrentScreenOffset = math.min(math.max(math.floor(Options.HUDOffset*10),0),10)
@@ -1713,7 +1754,7 @@ function MCM.ConvertDisplayToTextTable(displayValue, lineWidth, font)
 	if type(displayValue) == "string" then
 		textTableDisplay = {displayValue}
 	elseif type(displayValue) == "table" then
-		textTableDisplay = SaveHelper.CopyTable(displayValue)
+		textTableDisplay = MCM.CopyTable(displayValue)
 	else
 		textTableDisplay = {tostring(displayValue)}
 	end
