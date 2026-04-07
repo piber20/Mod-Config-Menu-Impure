@@ -58,9 +58,6 @@ if not MCM then
 end
 MCM.Version = VERSION
 
---Proxy stuff so old stuff will work. Probably a bad idea but whatever
-ModConfigMenu = MCM
-
 function MCM.GetVersionString(override)
 
 	local versionNum = MCM.Version
@@ -109,13 +106,6 @@ if not InputHelper then
 	exec("scripts.inputhelper")
 	if not InputHelper then
 		error("Mod Config Menu requires Input Helper to function", 2)
-	end
-end
-
-if not ScreenHelper then
-	exec("scripts.screenhelper")
-	if not ScreenHelper then
-		error("Mod Config Menu requires Screen Helper to function", 2)
 	end
 end
 
@@ -185,12 +175,12 @@ function MCM.LoadSave(fromData)
 		
 		MCM.Config = SaveHelper.CopyTable(saveData)
 		MCM.SetConfigMetatables()
-		
-		--make sure ScreenHelper's offset matches MCM's offset
-		if ScreenHelper then
-			ScreenHelper.SetOffset(MCM.Config["General"].HudOffset)
+		if Options then
+			MCM.CurrentScreenOffset = math.min(math.max(math.floor(Options.HUDOffset*10),0),10)
+		else
+			MCM.SetOffset(MCM.Config["General"].HudOffset)
 		end
-		
+
 		return saveData
 		
 	end
@@ -1071,34 +1061,96 @@ end
 --------------------------
 --GENERAL SETTINGS SETUP--
 --------------------------
-MCM.SetCategoryInfo("General", "Settings that affect the majority of mods")
+--if not Options then
+	MCM.SetCategoryInfo("General", "Settings that affect the majority of mods")
+--end
 
+--------------
+--HUD OFFSET--
+--------------
+if Options then
+	MCM.CurrentScreenOffset = math.min(math.max(math.floor(Options.HUDOffset*10),0),10)
+else
+	MCM.CurrentScreenOffset = MCM.CurrentScreenOffset or 0
+end
 
-----------------------
---HUD OFFSET SETTING--
-----------------------
-local hudOffsetSetting = MCM.AddScrollSetting(
-	"General", --category
-	"HudOffset", --attribute in table
-	0, --default value
-	"Hud Offset", --display text
-	"How far from the corners of the screen custom hud elements will be.$newlineTry to make this match your base-game setting."
-)
-
-hudOffsetSetting.HideControls = true -- hide controls so the screen corner graphics are easier to see
-hudOffsetSetting.ShowOffset = true -- shows screen offset
-
---set up callback
-local oldHudOffsetOnChange = hudOffsetSetting.OnChange
-hudOffsetSetting.OnChange = function(currentValue)
-
-	--update screenhelper's offset
-	if ScreenHelper then
-		ScreenHelper.SetOffset(currentValue)
+function MCM.SetOffset(num)
+	num = math.min(math.max(math.floor(num),0),10)
+	MCM.CurrentScreenOffset = num
+	if Options then
+		Options.HUDOffset = MCM.CurrentScreenOffset * 0.1
 	end
+	return num
+end
 
-	return oldHudOffsetOnChange(currentValue)
-	
+function MCM.GetOffset()
+	if Options then
+		MCM.CurrentScreenOffset = math.min(math.max(math.floor(Options.HUDOffset*10),0),10)
+	end
+	return MCM.CurrentScreenOffset
+end
+
+function MCM.GetScreenSize() --based off of code from kilburn
+	local game = Game()
+	local room = game:GetRoom()
+	local pos = room:WorldToScreenPosition(vecZero) - room:GetRenderScrollOffset() - game.ScreenShakeOffset
+	local rx = pos.X + 60 * 26 / 40
+	local ry = pos.Y + 140 * (26 / 40)
+	return Vector(rx*2 + 13*26, ry*2 + 7*26)
+end
+
+function MCM.GetScreenCenter()
+	return MCM.GetScreenSize() / 2
+end
+
+function MCM.GetScreenBottomRight(offset)
+	offset = offset or MCM.GetOffset()
+	local pos = MCM.GetScreenSize()
+	local hudOffset = Vector(-offset * 2.2, -offset * 1.6)
+	pos = pos + hudOffset
+	return pos
+end
+
+function MCM.GetScreenBottomLeft(offset)
+	offset = offset or MCM.GetOffset()
+	local pos = Vector(0, MCM.GetScreenBottomRight(0).Y)
+	local hudOffset = Vector(offset * 2.2, -offset * 1.6)
+	pos = pos + hudOffset
+	return pos
+end
+
+function MCM.GetScreenTopRight(offset)
+	offset = offset or MCM.GetOffset()
+	local pos = Vector(MCM.GetScreenBottomRight(0).X, 0)
+	local hudOffset = Vector(-offset * 2.2, offset * 1.2)
+	pos = pos + hudOffset
+	return pos
+end
+
+function MCM.GetScreenTopLeft(offset)
+	offset = offset or MCM.GetOffset()
+	local pos = vecZero
+	local hudOffset = Vector(offset * 2, offset * 1.2)
+	pos = pos + hudOffset
+	return pos
+end
+
+if not Options then
+	local hudOffsetSetting = MCM.AddScrollSetting(
+		"General", --category
+		"HudOffset", --attribute in table
+		0, --default value
+		"Hud Offset", --display text
+		"How far from the corners of the screen custom hud elements will be.$newlineTry to make this match your base-game setting."
+	)
+	hudOffsetSetting.HideControls = true -- hide controls so the screen corner graphics are easier to see
+	hudOffsetSetting.ShowOffset = true -- shows screen offset
+	--set up callback
+	local oldHudOffsetOnChange = hudOffsetSetting.OnChange
+	hudOffsetSetting.OnChange = function(currentValue)
+		MCM.SetOffset(currentValue)
+		return oldHudOffsetOnChange(currentValue)
+	end
 end
 
 
@@ -1602,7 +1654,7 @@ function MCM.PostRender()
 	--handle version display on game start
 	if versionPrintTimer > 0 then
 	
-		local bottomRight = ScreenHelper.GetScreenBottomRight(0)
+		local bottomRight = MCM.GetScreenBottomRight(0)
 
 		local openMenuButton = Keyboard.KEY_F10
 		if type(MCM.Config["Mod Config Menu"].OpenMenuKeyboard) == "number" and MCM.Config["Mod Config Menu"].OpenMenuKeyboard > -1 then
@@ -1623,7 +1675,7 @@ function MCM.PostRender()
 	--on-screen warnings
 	if restartWarnMessage or rerunWarnMessage then
 	
-		local bottomRight = ScreenHelper.GetScreenBottomRight(0)
+		local bottomRight = MCM.GetScreenBottomRight(0)
 	
 		local text = restartWarnMessage or rerunWarnMessage
 		local warningPrintColor = KColor(1, 0, 0, 1)
@@ -2367,7 +2419,7 @@ function MCM.PostRender()
 			end
 		end
 		
-		local centerPos = ScreenHelper.GetScreenCenter()
+		local centerPos = MCM.GetScreenCenter()
 		
 		--title pos handling
 		local titlePos = centerPos + Vector(68,-118)
@@ -2924,14 +2976,13 @@ function MCM.PostRender()
 		--hud offset
 		if configMenuInOptions
 		and currentMenuOption
-		and currentMenuOption.ShowOffset
-		and ScreenHelper then
+		and currentMenuOption.ShowOffset then
 		
 			--render the visual
-			HudOffsetVisualBottomRight:Render(ScreenHelper.GetScreenBottomRight(), vecZero, vecZero)
-			HudOffsetVisualBottomLeft:Render(ScreenHelper.GetScreenBottomLeft(), vecZero, vecZero)
-			HudOffsetVisualTopRight:Render(ScreenHelper.GetScreenTopRight(), vecZero, vecZero)
-			HudOffsetVisualTopLeft:Render(ScreenHelper.GetScreenTopLeft(), vecZero, vecZero)
+			HudOffsetVisualBottomRight:Render(MCM.GetScreenBottomRight(), vecZero, vecZero)
+			HudOffsetVisualBottomLeft:Render(MCM.GetScreenBottomLeft(), vecZero, vecZero)
+			HudOffsetVisualTopRight:Render(MCM.GetScreenTopRight(), vecZero, vecZero)
+			HudOffsetVisualTopLeft:Render(MCM.GetScreenTopLeft(), vecZero, vecZero)
 			
 		end
 		
@@ -2987,7 +3038,7 @@ function MCM.PostRender()
 		if shouldShowControls then
 
 			--back
-			local bottomLeft = ScreenHelper.GetScreenBottomLeft(0)
+			local bottomLeft = MCM.GetScreenBottomLeft(0)
 			if not configMenuInSubcategory then
 				CornerExit:Render(bottomLeft, vecZero, vecZero)
 			else
@@ -3005,7 +3056,7 @@ function MCM.PostRender()
 			Font10:DrawString(goBackString, (bottomLeft.X - Font10:GetStringWidthUTF8(goBackString)/2) + 36, bottomLeft.Y - 24, mainFontColor, 0, true)
 
 			--select
-			local bottomRight = ScreenHelper.GetScreenBottomRight(0)
+			local bottomRight = MCM.GetScreenBottomRight(0)
 			if not configMenuInPopup then
 			
 				local foundValidPopup = false
@@ -3174,6 +3225,44 @@ if MCM.StandaloneMod then
 
 end
 
+
+-----------------
+--LEGACY COMPAT--
+-----------------
+function MCM.ReturnNil()
+	return nil
+end
+function MCM.ReturnFalse()
+	return false
+end
+ModConfigMenu = MCM
+
+--Make old mods that use ScreenHelper still kinda work
+ScreenHelper = MCM
+
+--Make old mods that use FilepathHelper still kinda work
+FilepathHelper = MCM
+FilepathHelper.KnownFilePathsByName = {["resources/scripts/"] = true}
+FilepathHelper.KnownFilePathsByIndex = {"resources/scripts/"}
+function FilepathHelper.GetCurrentModPath() return FilepathHelper.KnownFilePathsByIndex[1] end
+function FilepathHelper.DoFile(path)
+	if type(include) == "function" then
+		print("dofile should no longer be used. Please update to use the include function.")
+	else
+		print("dofile should no longer be used. Please update to use the require function.")
+	end
+	return exec(path)
+end
+FilepathHelper.OldDoFile = FilepathHelper.DoFile
+if not dofile then
+	dofile = FilepathHelper.DoFile
+end
+FilepathHelper.TestPath = MCM.ReturnNil
+FilepathHelper.IsFile = MCM.ReturnFalse
+FilepathHelper.IsDirectory = MCM.ReturnFalse
+FilepathHelper.IsAnm2 = MCM.ReturnFalse
+FilepathHelper.OldRegisterMod = Isaac.RegisterMod
+FilepathHelper.RegisterMod = Isaac.RegisterMod
 
 ------------
 --FINISHED--
