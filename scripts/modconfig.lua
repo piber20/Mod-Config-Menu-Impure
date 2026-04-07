@@ -57,6 +57,16 @@ if not MCM then
 	MCM = {}
 end
 MCM.Version = VERSION
+MCM.DLC = 2
+if REPENTANCE then
+	MCM.DLC = 3
+	local game = Game()
+	local room = game:GetRoom()
+	local metatable = getmetatable(room)
+	if type(metatable) == "table" and type(metatable.DamageGridWithSource) == "function" then
+		MCM.DLC = 4
+	end
+end
 
 function MCM.GetVersionString(override)
 
@@ -496,13 +506,25 @@ local CornerExit = MCM.GetMenuAnm2Sprite("BackSelect", 3)
 
 --fonts
 local Font10 = Font()
-Font10:Load("font/teammeatfont10.fnt")
-
 local Font12 = Font()
-Font12:Load("font/teammeatfont12.fnt")
-
 local Font16Bold = Font()
+
+if MCM.DLC >= 4 then
+	Font10:Load("font/teammeatex/teammeatex10.fnt")
+	Font12:Load("font/teammeatex/teammeatex12.fnt")
+else
+	Font10:Load("font/teammeatfont10.fnt")
+	Font12:Load("font/teammeatfont12.fnt")
+end
 Font16Bold:Load("font/teammeatfont16bold.fnt")
+
+function MCM.DrawFont(font, string, posx, posy, color, width, center)
+	if MCM.DLC >= 3 then
+		font:DrawStringUTF8(string, posx, posy, color, width, center)
+	else
+		MCM.DrawFont(font, string, posx, posy, color, width, center)
+	end
+end
 
 --popups
 MCM.PopupGfx = MCM.PopupGfx or {}
@@ -1265,7 +1287,7 @@ function MCM.GetOffset()
 end
 
 function MCM.GetScreenSize()
-	if REPENTANCE then
+	if MCM.DLC >= 3 then
 		return Vector(Isaac.GetScreenWidth(), Isaac.GetScreenHeight())
 	else--based off of code from kilburn
 		local game = Game()
@@ -1499,7 +1521,7 @@ hideHudSetting.OnChange = function(currentValue)
 	oldHideHudOnChange(currentValue)
 	
 	local game = Game()
-	if REPENTANCE then
+	if MCM.DLC >= 3 then
 		local hud = game:GetHUD()
 		hud:SetVisible(not currentValue)
 	else
@@ -1894,7 +1916,7 @@ function MCM.PostRender()
 				game:GetRoom():IsFirstVisit() and
 				not DeadSeaScrollsMenu.IsOpen() and
 				DeadSeaScrollsMenu.GetMenuHintSetting() == 1
-			if REPENTANCE then
+			if MCM.DLC >= 3 then
 				isDSSTextDisplayed = isDSSTextDisplayed and
 					level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE and
 					level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE_B and
@@ -1904,7 +1926,7 @@ function MCM.PostRender()
 				warnOffset = MCM.WarningOffsetDSS
 			end
 		end
-		versionPrintFont:DrawString(text, 0, bottomRight.Y - warnOffset, versionPrintColor, bottomRight.X, true)
+		MCM.DrawFont(versionPrintFont, text, 0, bottomRight.Y - warnOffset, versionPrintColor, bottomRight.X, true)
 		
 	end
 	
@@ -1923,7 +1945,7 @@ function MCM.PostRender()
 				game:GetRoom():IsFirstVisit() and
 				not DeadSeaScrollsMenu.IsOpen() and
 				DeadSeaScrollsMenu.GetMenuHintSetting() == 1
-			if REPENTANCE then
+			if MCM.DLC >= 3 then
 				isDSSTextDisplayed = isDSSTextDisplayed and
 					level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE and
 					level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE_B and
@@ -1933,7 +1955,7 @@ function MCM.PostRender()
 				warnOffset = MCM.WarningOffsetDSS
 			end
 		end
-		versionPrintFont:DrawString(text, 0, bottomRight.Y - warnOffset, warningPrintColor, bottomRight.X, true)
+		MCM.DrawFont(versionPrintFont, text, 0, bottomRight.Y - warnOffset, warningPrintColor, bottomRight.X, true)
 		
 	end
 
@@ -2839,7 +2861,7 @@ function MCM.PostRender()
 				]]
 				
 				local posOffset = Font12:GetStringWidthUTF8(textToDraw)/2
-				Font12:DrawString(textToDraw, lastLeftPos.X - posOffset, lastLeftPos.Y - 8, color, 0, true)
+				MCM.DrawFont(Font12, textToDraw, lastLeftPos.X - posOffset, lastLeftPos.Y - 8, color, 0, true)
 				
 				--cursor
 				if configMenuPositionCursorCategory == categoryIndex then
@@ -2925,7 +2947,7 @@ function MCM.PostRender()
 								end
 								
 								posOffset = Font12:GetStringWidthUTF8(textToDraw)/2
-								Font12:DrawString(textToDraw, lastSubcategoryPos.X - posOffset, lastSubcategoryPos.Y - 8, color, 0, true)
+								MCM.DrawFont(Font12, textToDraw, lastSubcategoryPos.X - posOffset, lastSubcategoryPos.Y - 8, color, 0, true)
 							end
 							
 							--cursor
@@ -3048,7 +3070,7 @@ function MCM.PostRender()
 							end
 							
 							posOffset = font:GetStringWidthUTF8(textToDraw)/2
-							font:DrawString(textToDraw, lastOptionPos.X - posOffset, lastOptionPos.Y - heightOffset, color, 0, true)
+							MCM.DrawFont(font, textToDraw, lastOptionPos.X - posOffset, lastOptionPos.Y - heightOffset, color, 0, true)
 						elseif optionType == MCM.OptionType.SCROLL then
 							local numberToShow = optionDisplay
 							
@@ -3088,7 +3110,7 @@ function MCM.PostRender()
 										
 										scrollOffset = posOffset
 										posOffset = Font10:GetStringWidthUTF8(textToDraw)/2
-										Font10:DrawString(textToDraw, lastOptionPos.X - posOffset, lastOptionPos.Y - 6, color, 0, true)
+										MCM.DrawFont(Font10, textToDraw, lastOptionPos.X - posOffset, lastOptionPos.Y - 6, color, 0, true)
 										
 										scrollOffset = posOffset - (Font10:GetStringWidthUTF8(textToDrawPreScroll)+scrollOffset)
 										numberToShow = numberString
@@ -3167,7 +3189,7 @@ function MCM.PostRender()
 			titleText = tostring(currentMenuCategory.Name)
 		end
 		local titleTextOffset = Font16Bold:GetStringWidthUTF8(titleText)/2
-		Font16Bold:DrawString(titleText, titlePos.X - titleTextOffset, titlePos.Y - 9, mainFontColor, 0, true)
+		MCM.DrawFont(Font16Bold, titleText, titlePos.X - titleTextOffset, titlePos.Y - 9, mainFontColor, 0, true)
 		
 		--info
 		local infoTable = nil
@@ -3213,7 +3235,7 @@ function MCM.PostRender()
 				if isOldInfo then
 					color = optionsFontColorTitle
 				end
-				Font10:DrawString(textToDraw, lastInfoPos.X - posOffset, lastInfoPos.Y - 6, color, 0, true)
+				MCM.DrawFont(Font10, textToDraw, lastInfoPos.X - posOffset, lastInfoPos.Y - 6, color, 0, true)
 				
 				--pos mod
 				lastInfoPos = lastInfoPos + Vector(0,10)
@@ -3272,7 +3294,7 @@ function MCM.PostRender()
 					--text
 					local textToDraw = tostring(popupTableDisplay[line])
 					local posOffset = Font10:GetStringWidthUTF8(textToDraw)/2
-					Font10:DrawString(textToDraw, lastPopupPos.X - posOffset, lastPopupPos.Y - 6, mainFontColor, 0, true)
+					MCM.DrawFont(Font10, textToDraw, lastPopupPos.X - posOffset, lastPopupPos.Y - 6, mainFontColor, 0, true)
 					
 					--pos mod
 					lastPopupPos = lastPopupPos + Vector(0,10)
@@ -3302,7 +3324,7 @@ function MCM.PostRender()
 					goBackString = MCM.ControllerToString[MCM.Config.LastBackPressed]
 				end
 			end
-			Font10:DrawString(goBackString, (bottomLeft.X - Font10:GetStringWidthUTF8(goBackString)/2) + 36, bottomLeft.Y - 24, mainFontColor, 0, true)
+			MCM.DrawFont(Font10, goBackString, (bottomLeft.X - Font10:GetStringWidthUTF8(goBackString)/2) + 36, bottomLeft.Y - 24, mainFontColor, 0, true)
 
 			--select
 			local bottomRight = MCM.GetScreenBottomRight(0)
@@ -3334,7 +3356,7 @@ function MCM.PostRender()
 						selectString = MCM.ControllerToString[MCM.Config.LastSelectPressed]
 					end
 				end
-				Font10:DrawString(selectString, (bottomRight.X - Font10:GetStringWidthUTF8(selectString)/2) - 36, bottomRight.Y - 24, mainFontColor, 0, true)
+				MCM.DrawFont(Font10, selectString, (bottomRight.X - Font10:GetStringWidthUTF8(selectString)/2) - 36, bottomRight.Y - 24, mainFontColor, 0, true)
 				
 			end
 			
@@ -3387,7 +3409,7 @@ function MCM.OpenConfigMenu()
 		if MCM.Config["Mod Config Menu"].HideHudInMenu then
 		
 			local game = Game()
-			if REPENTANCE then
+			if MCM.DLC >= 3 then
 				local hud = game:GetHUD()
 				hud:SetVisible(false)
 			else
@@ -3415,7 +3437,7 @@ function MCM.CloseConfigMenu()
 	MCM.LeaveSubcategory()
 
 	local game = Game()
-	if REPENTANCE then
+	if MCM.DLC >= 3 then
 		local hud = game:GetHUD()
 		hud:SetVisible(true)
 	else
