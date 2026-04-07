@@ -1,6 +1,8 @@
-Mod Config Menu Impure is an updated version of Mod Config Menu for Afterbirth+ by the original author which retains integral features such as the ability to embed it in other mods and removes some uneeded scripts. Compatibility with old mods or mods made for unofficial versions of Mod Config Menu is kept as best as possible.
+Mod Config Menu Impure is an updated version of the Mod Config Menu mod for Afterbirth+ by the original author which retains integral features such as the ability to embed it in other mods and removes some uneeded scripts. Compatibility with old mods or mods made for unofficial versions of Mod Config Menu is kept as best as possible.
 
-The Mod Config Menu is a mod that adds a new menu to the game that enables other mods to provide a simple and easy way for the player to configure them.
+The mod has been updated to work with Repentance and Repentance+ while keeping Afterbirth+ compatibility.
+
+The Mod Config Menu is a new menu that enables other mods to provide a simple and easy way for the player to configure them.
 
 This mod does not do much on its own, to get into the real action you should download a mod which supports this menu.
 
