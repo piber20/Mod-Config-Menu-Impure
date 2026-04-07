@@ -305,7 +305,7 @@ CustomCallbacks.MCM_POST_MODIFY_SETTING = 4200
 --SAVING--
 ----------
 
-MCM.SetConfigMetatables = MCM.SetConfigMetatables or function() return end
+MCM.SetConfigMetatables = MCM.SetConfigMetatables or function() end
 
 MCM.ConfigDefault = MCM.ConfigDefault or {}
 MCM.FillTable(MCM.ConfigDefault,{
