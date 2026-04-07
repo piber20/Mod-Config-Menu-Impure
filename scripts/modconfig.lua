@@ -1783,13 +1783,20 @@ local optionsCurrentOffset = 0
 MCM.ControlsEnabled = true
 MCM.WarningOffset = 28
 MCM.WarningOffsetDSS = 50
+function MCM.GetIsPaused()
+	if AwaitingTextInput or CustomConsoleOpen then
+		return true
+	elseif DeadSeaScrollsMenu and DeadSeaScrollsMenu.OpenedMenu then
+		return true
+	else
+		return Game():IsPaused()
+	end
+end
+
 function MCM.PostRender()
 
 	local game = Game()
-	local isPaused = game:IsPaused()
-	if DeadSeaScrollsMenu and DeadSeaScrollsMenu.OpenedMenu then
-		isPaused = true
-	end
+	local isPaused = MCM.GetIsPaused()
 	
 	local sfx = SFXManager()
 
