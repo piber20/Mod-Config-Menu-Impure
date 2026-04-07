@@ -1,15 +1,17 @@
 --this script handles saving for the standalone version of mod config menu
 
---load filepath helper
-require("scripts.filepathhelper")
-dofile("scripts/filepathhelper")
-
 --load some scripts
-require("scripts.customcallbacks")
-dofile("scripts/customcallbacks")
+local function exec(path)
+	if type(include) == "function" then -- trick to try to detect if we're on repentance
+		include(path)
+	else -- if not then we're in afterbirth plus
+		require(path)
+	end
+end
 
-require("scripts.savehelper")
-dofile("scripts/savehelper")
+exec("scripts.filepathhelper")
+exec("scripts.customcallbacks")
+exec("scripts.savehelper")
 
 --create the mod
 local mod = RegisterMod("Mod Config Menu Standalone", 1)
@@ -38,10 +40,7 @@ mod:AddCustomCallback(CustomCallbacks.SH_POST_MOD_LOAD, function(_, modRef, save
 end, mod.Name)
 
 --load mod config menu
-
---we load it like this instead of using dofile because the game caches the require function
-require("scripts.modconfig")
-dofile("scripts/modconfig")
+exec("scripts.modconfig")
 
 if not ModConfigMenu.StandaloneSaveLoaded then
 	SaveHelper.Load(ModConfigMenu.StandaloneMod)
@@ -49,5 +48,5 @@ if not ModConfigMenu.StandaloneSaveLoaded then
 end
 
 if not ModConfigMenu.CompatibilityMode then
-	dofile("scripts/modconfigoldcompatibility")
+	exec("scripts.modconfigoldcompatibility")
 end

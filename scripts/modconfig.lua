@@ -1,7 +1,10 @@
 -------------
 -- version --
 -------------
-local fileVersion = 32
+-- Chifilly's Mod Config Menu fork was 33.
+-- The pure version selected a starting point of 100 and incremented
+-- We'll start with 200 and increment
+local fileVersion = 200
 
 --prevent older/same version versions of this script from loading
 if ModConfigMenu and ModConfigMenu.Version and ModConfigMenu.Version >= fileVersion then
@@ -3168,6 +3171,14 @@ function ModConfigMenu.ExecuteCmd(_, command, args)
 end
 ModConfigMenu.Mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, ModConfigMenu.ExecuteCmd)
 
+local function exec(path)
+	if type(include) == "function" then -- trick to try to detect if we're on repentance
+		include(path)
+	else -- if not then we're in afterbirth plus
+		require(path)
+	end
+end
+
 if ModConfigMenu.StandaloneMod then
 
 	if not ModConfigMenu.StandaloneSaveLoaded then
@@ -3176,7 +3187,7 @@ if ModConfigMenu.StandaloneMod then
 	end
 	
 	if not ModConfigMenu.CompatibilityMode then
-		dofile("scripts/modconfigoldcompatibility")
+		exec("scripts/modconfigoldcompatibility")
 	end
 
 end
