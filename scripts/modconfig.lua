@@ -1282,6 +1282,10 @@ function MCM.Round(num, decimalPlaces)
     return math.floor(num * mult + 0.5) / mult
 end
 
+function MCM.RoundVector(vector, decimalPlaces)
+    return Vector(MCM.Round(vector.X, decimalPlaces), MCM.Round(vector.Y, decimalPlaces))
+end
+
 function MCM.GetScreenCenter()
 	return MCM.GetScreenSize() / 2
 end
@@ -1291,7 +1295,7 @@ function MCM.GetScreenBottomRight(offset)
 	local pos = MCM.GetScreenSize()
 	local hudOffset = Vector(-offset * 2.2, -offset * 1.6)
 	pos = pos + hudOffset
-	return MCM.Round(pos)
+	return MCM.RoundVector(pos)
 end
 
 function MCM.GetScreenBottomLeft(offset)
@@ -1299,7 +1303,7 @@ function MCM.GetScreenBottomLeft(offset)
 	local pos = Vector(0, MCM.GetScreenBottomRight(0).Y)
 	local hudOffset = Vector(offset * 2.2, -offset * 1.6)
 	pos = pos + hudOffset
-	return MCM.Round(pos)
+	return MCM.RoundVector(pos)
 end
 
 function MCM.GetScreenTopRight(offset)
@@ -1307,7 +1311,7 @@ function MCM.GetScreenTopRight(offset)
 	local pos = Vector(MCM.GetScreenBottomRight(0).X, 0)
 	local hudOffset = Vector(-offset * 2.2, offset * 1.2)
 	pos = pos + hudOffset
-	return MCM.Round(pos)
+	return MCM.RoundVector(pos)
 end
 
 function MCM.GetScreenTopLeft(offset)
@@ -1315,7 +1319,7 @@ function MCM.GetScreenTopLeft(offset)
 	local pos = vecZero
 	local hudOffset = Vector(offset * 2, offset * 1.2)
 	pos = pos + hudOffset
-	return MCM.Round(pos)
+	return MCM.RoundVector(pos)
 end
 
 if Options then
@@ -1497,7 +1501,7 @@ hideHudSetting.OnChange = function(currentValue)
 	local game = Game()
 	if REPENTANCE then
 		local hud = game:GetHUD()
-		hud:SetVisible = not currentValue
+		hud:SetVisible(not currentValue)
 	else
 		local seeds = game:GetSeeds()
 		if currentValue then
