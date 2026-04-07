@@ -12,14 +12,14 @@ This mod does not do much on its own, to get into the real action you should dow
 - Make sure you have the latest version of mod config menu, visible in the mod config menu category
 - Restart the game!
 
-If you still have issues even after doing all this, please report them to me, and provide any error logs if you have any.
+If you still have issues even after doing all this, please create an issue in the github repo: https://github.com/piber20/Mod-Config-Menu-Impure
 
 
 ## Navigation
 
 
 Keyboard:
-Use the arrow keys or WASD keys to move around
+Use the arrow keys or WASD keys to navigate
 
 Esc, backspace, or Q can be used to go back
 
@@ -30,6 +30,6 @@ By default you can open the menu by pressing L.
 F10 will also always open the menu, this cannot be changed.
 
 Controller:
-Both control sticks can be used to move around, press B to go back, A to select an item.
+Both control sticks can be used to navigate the menu, press B to go back, A to select an item.
 
 By default you can open the menu by pressing down the right control stick.
