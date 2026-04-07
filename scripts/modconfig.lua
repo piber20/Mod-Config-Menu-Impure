@@ -1,21 +1,24 @@
--------------
--- version --
--------------
+----------------------
+-- Version Handling --
+----------------------
 -- Chifilly's Mod Config Menu fork was 33.
--- The pure version selected a starting point of 100 and incremented
--- We'll start with 200 and increment
-local fileVersion = 200
+-- The "pure" version selected a starting point of 100 and incremented
+-- We'll start with 200 and increment. We'll display it as 2.00.
+local VERSION = 200
 
--- Prevent older/same version versions of this script from loading
-if MCM and MCM.Version and MCM.Version >= fileVersion then
+-- Prevent older/same versions of this script from loading
+if MCM and MCM.Version and MCM.Version >= VERSION then
 	return MCM
 end
 
 -- Handle old versions
-if (ModConfigMenu and not MCM) or (MCM and MCM.Version and MCM.Version < fileVersion) then
+local oldVersion = nil
+if (ModConfigMenu and not MCM) or (MCM and MCM.Version and MCM.Version < VERSION) then
 	if not MCM then
 		MCM = ModConfigMenu
 	end
+
+	oldVersion = MCM.Version
 
 	if MCM.MenuData then
 		for i=#MCM.MenuData, 1, -1 do
@@ -47,22 +50,36 @@ if (ModConfigMenu and not MCM) or (MCM and MCM.Version and MCM.Version < fileVer
 	end
 end
 
+----------
+-- Init --
+----------
 if not MCM then
 	MCM = {}
 end
+MCM.Version = VERSION
 
 --Proxy stuff so old stuff will work. Probably a bad idea but whatever
 ModConfigMenu = MCM
 
-local json = require("json")
-local IS_DEV = false
+function MCM.GetVersionString(override)
 
-MCM.Version = fileVersion
+	local versionNum = MCM.Version
+	if override then
+		versionNum = override
+	end
 
------------
--- setup --
------------
-Isaac.DebugString("Loading Mod Config Menu v" .. MCM.Version)
+	local versionMain = math.floor(versionNum*0.01)
+	local versionSub = versionNum - (versionMain*100)
+	local versionString = "" .. versionMain .. "." .. versionSub
+
+	return versionString
+
+end
+
+Isaac.DebugString("Loading Mod Config Menu v" .. MCM.GetVersionString() .. "...")
+if oldVersion then
+	Isaac.DebugString("Removed old version: v" .. MCM.GetVersionString(oldVersion))
+end
 
 local vecZero = Vector(0,0)
 
@@ -1192,7 +1209,7 @@ MCM.AddText("General", "all mods which support them")
 
 MCM.SetCategoryInfo("Mod Config Menu", "Settings specific to Mod Config Menu.$newlineChange keybindings for the menu here.")
 
-MCM.AddTitle("Mod Config Menu", "Version " .. tostring(MCM.Version) .. " !") --VERSION INDICATOR
+MCM.AddTitle("Mod Config Menu", "Version " .. MCM.GetVersionString() .. " !") --VERSION INDICATOR
 
 MCM.AddSpace("Mod Config Menu") --SPACE
 
@@ -3193,8 +3210,8 @@ end
 ------------
 --FINISHED--
 ------------
-Isaac.DebugString("Mod Config Menu v" .. MCM.Version .. " loaded!")
-print("Mod Config Menu v" .. MCM.Version .. " loaded!")
+Isaac.DebugString("Mod Config Menu v" .. MCM.GetVersionString() .. " loaded!")
+print("Mod Config Menu v" .. MCM.GetVersionString() .. " loaded!")
 
 
 return MCM
