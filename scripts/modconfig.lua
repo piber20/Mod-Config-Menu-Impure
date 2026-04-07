@@ -1445,15 +1445,19 @@ hideHudSetting.OnChange = function(currentValue)
 	oldHideHudOnChange(currentValue)
 	
 	local game = Game()
-	local seeds = game:GetSeeds()
-	
-	if currentValue then
-		if not seeds:HasSeedEffect(SeedEffect.SEED_NO_HUD) then
-			seeds:AddSeedEffect(SeedEffect.SEED_NO_HUD)
-		end
+	if REPENTANCE then
+		local hud = game:GetHUD()
+		hud:SetVisible = not currentValue
 	else
-		if seeds:HasSeedEffect(SeedEffect.SEED_NO_HUD) then
-			seeds:RemoveSeedEffect(SeedEffect.SEED_NO_HUD)
+		local seeds = game:GetSeeds()
+		if currentValue then
+			if not seeds:HasSeedEffect(SeedEffect.SEED_NO_HUD) then
+				seeds:AddSeedEffect(SeedEffect.SEED_NO_HUD)
+			end
+		else
+			if seeds:HasSeedEffect(SeedEffect.SEED_NO_HUD) then
+				seeds:RemoveSeedEffect(SeedEffect.SEED_NO_HUD)
+			end
 		end
 	end
 
@@ -3342,10 +3346,15 @@ function MCM.CloseConfigMenu()
 	MCM.LeavePopup()
 	MCM.LeaveOptions()
 	MCM.LeaveSubcategory()
-	
+
 	local game = Game()
-	local seeds = game:GetSeeds()
-	seeds:RemoveSeedEffect(SeedEffect.SEED_NO_HUD)
+	if REPENTANCE then
+		local hud = game:GetHUD()
+		hud:SetVisible(true)
+	else
+		local seeds = game:GetSeeds()
+		seeds:RemoveSeedEffect(SeedEffect.SEED_NO_HUD)
+	end
 	
 	
 	MCM.IsVisible = false
