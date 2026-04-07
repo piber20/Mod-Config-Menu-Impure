@@ -3387,8 +3387,13 @@ function MCM.OpenConfigMenu()
 		if MCM.Config["Mod Config Menu"].HideHudInMenu then
 		
 			local game = Game()
-			local seeds = game:GetSeeds()
-			seeds:AddSeedEffect(SeedEffect.SEED_NO_HUD)
+			if REPENTANCE then
+				local hud = game:GetHUD()
+				hud:SetVisible(false)
+			else
+				local seeds = game:GetSeeds()
+				seeds:AddSeedEffect(SeedEffect.SEED_NO_HUD)
+			end
 			
 		end
 		
