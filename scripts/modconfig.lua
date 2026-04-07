@@ -1636,10 +1636,15 @@ local HudOffsetVisualBottomLeft = MCM.GetMenuAnm2Sprite("Offset", 3)
 local leftCurrentOffset = 0
 local optionsCurrentOffset = 0
 MCM.ControlsEnabled = true
+MCM.WarningOffset = 28
+MCM.WarningOffsetDSS = 50
 function MCM.PostRender()
 
 	local game = Game()
 	local isPaused = game:IsPaused()
+	if DeadSeaScrollsMenu and DeadSeaScrollsMenu.OpenedMenu then
+		isPaused = true
+	end
 	
 	local sfx = SFXManager()
 
@@ -1671,7 +1676,21 @@ function MCM.PostRender()
 		
 		local text = "Press " .. openMenuButtonString .. " to open Mod Config Menu"
 		local versionPrintColor = KColor(1, 1, 0, (math.min(versionPrintTimer, 60)/60) * 0.5)
-		versionPrintFont:DrawString(text, 0, bottomRight.Y - 28, versionPrintColor, bottomRight.X, true)
+		local warnOffset = MCM.WarningOffset
+		if DeadSeaScrollsMenu then
+			local level = game:GetLevel()
+			local isDSSTextDisplayed = level:GetStage() == LevelStage.STAGE1_1 and
+				level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and game:GetRoom():IsFirstVisit() and
+				level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE and
+				level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE_B and
+				not game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH) and
+				not DeadSeaScrollsMenu.IsOpen() and
+				DeadSeaScrollsMenu.GetMenuHintSetting() == 1
+			if isDSSTextDisplayed then
+				warnOffset = MCM.WarningOffsetDSS
+			end
+		end
+		versionPrintFont:DrawString(text, 0, bottomRight.Y - warnOffset, versionPrintColor, bottomRight.X, true)
 		
 	end
 	
@@ -1682,7 +1701,21 @@ function MCM.PostRender()
 	
 		local text = restartWarnMessage or rerunWarnMessage
 		local warningPrintColor = KColor(1, 0, 0, 1)
-		versionPrintFont:DrawString(text, 0, bottomRight.Y - 28, warningPrintColor, bottomRight.X, true)
+		local warnOffset = MCM.WarningOffset
+		if DeadSeaScrollsMenu then
+			local level = game:GetLevel()
+			local isDSSTextDisplayed = level:GetStage() == LevelStage.STAGE1_1 and
+				level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and game:GetRoom():IsFirstVisit() and
+				level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE and
+				level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE_B and
+				not game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH) and
+				not DeadSeaScrollsMenu.IsOpen() and
+				DeadSeaScrollsMenu.GetMenuHintSetting() == 1
+			if isDSSTextDisplayed then
+				warnOffset = MCM.WarningOffsetDSS
+			end
+		end
+		versionPrintFont:DrawString(text, 0, bottomRight.Y - warnOffset, warningPrintColor, bottomRight.X, true)
 		
 	end
 
@@ -1713,22 +1746,17 @@ function MCM.PostRender()
 	if MCM.IsVisible then
 	
 		if isPaused then
-		
 			MCM.CloseConfigMenu()
-			
 		end
 		
 		if not MCM.RoomIsSafe() then
-		
 			MCM.CloseConfigMenu()
-			
 			sfx:Play(SoundEffect.SOUND_BOSS2INTRO_ERRORBUZZ, 0.75, 0, false, 1)
-			
 		end
 		
 	end
 
-	--replace dead sea scrolls' controller setting to not conflict with mcm's
+	--replace Dead Sea Scrolls' controller setting to not conflict with mcm's
 	if DeadSeaScrollsMenu and DeadSeaScrollsMenu.GetGamepadToggleSetting then
 	
 		local dssControllerToggle = DeadSeaScrollsMenu.GetGamepadToggleSetting()
@@ -1737,11 +1765,11 @@ function MCM.PostRender()
 		
 			if openMenuController == Controller.STICK_RIGHT and (dssControllerToggle == 1 or dssControllerToggle == 3 or dssControllerToggle == 4) then
 			
-				DeadSeaScrollsMenu.SaveGamepadToggleSetting(2) --force revelations' menu to only use the left stick
+				DeadSeaScrollsMenu.SaveGamepadToggleSetting(2) --force Dead Sea Scrolls to only use the left stick
 				
 			elseif openMenuController == Controller.STICK_LEFT and (dssControllerToggle == 1 or dssControllerToggle == 2 or dssControllerToggle == 4) then
 			
-				DeadSeaScrollsMenu.SaveGamepadToggleSetting(3) --force revelations' menu to only use the right stick
+				DeadSeaScrollsMenu.SaveGamepadToggleSetting(3) --force Dead Sea Scrolls to only use the right stick
 				
 			end
 			
@@ -1752,7 +1780,7 @@ function MCM.PostRender()
 	if MCM.IsVisible then
 	
 		if MCM.ControlsEnabled and not isPaused then
-		
+
 			for i=0, game:GetNumPlayers()-1 do
 		
 				local player = Isaac.GetPlayer(i)
@@ -1770,7 +1798,7 @@ function MCM.PostRender()
 					data.ConfigMenuPlayerControlsDisabled = true
 				end
 				
-				--disable toggling revelations menu
+				--disable toggling Dead Sea Scrolls
 				if data.input and data.input.menu and data.input.menu.toggle then
 					data.input.menu.toggle = false
 				end
