@@ -3028,7 +3028,7 @@ function MCM.PostRender()
 							end
 							
 							if optionColor then
-								color = KColor(optionColor[1], optionColor[2], optionColor[3], color.A)
+								color = KColor(optionColor[1], optionColor[2], optionColor[3], color.Alpha)
 							end
 							
 							posOffset = font:GetStringWidthUTF8(textToDraw)/2
@@ -3067,7 +3067,7 @@ function MCM.PostRender()
 											color = optionsFontColorAlpha
 										end
 										if optionColor then
-											color = KColor(optionColor[1], optionColor[2], optionColor[3], color.A)
+											color = KColor(optionColor[1], optionColor[2], optionColor[3], color.Alpha)
 										end
 										
 										scrollOffset = posOffset
