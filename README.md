@@ -18,8 +18,8 @@ This mod does not do much on its own, to get into the real action you should dow
 
 
 ## Links
-Steam: https://steamcommunity.com/sharedfiles/filedetails/?id=3701683951
-Non-Steam: https://www.nexusmods.com/thebindingofisaacrebirth/mods/111
+- Steam: https://steamcommunity.com/sharedfiles/filedetails/?id=3701683951
+- Non-Steam: https://www.nexusmods.com/thebindingofisaacrebirth/mods/111
 
 
 ## My mods dont work!
