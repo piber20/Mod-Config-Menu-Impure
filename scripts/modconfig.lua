@@ -121,7 +121,7 @@ end
 
 --create the mod
 MCM.Mod = MCM.Mod or RegisterMod("Mod Config Menu", 1)
-
+CustomCallbackHelper.ExtendMod(MCM.Mod)
 
 ----------
 --Tables--

@@ -12,6 +12,7 @@ exec("scripts.savehelper")
 
 --create the mod
 local mod = RegisterMod("Mod Config Menu (Standalone)", 1)
+CustomCallbackHelper.ExtendMod(mod)
 
 MCM = MCM or {}
 MCM.StandaloneMod = mod

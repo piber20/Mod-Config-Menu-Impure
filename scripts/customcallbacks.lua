@@ -11,7 +11,7 @@
 -------------
 -- version --
 -------------
-local fileVersion = 4
+local fileVersion = 5
 
 --prevent older/same version versions of this script from loading
 if CustomCallbackHelper and CustomCallbackHelper.Version >= fileVersion then
@@ -279,86 +279,66 @@ end
 -- extend mod --
 ----------------
 function CustomCallbackHelper.ExtendMod(mod)
-
 	--check if the mod is already in the table
 	local modAlreadyRegistered = false
 	for i=1, #CustomCallbackHelper.RegisteredMods do
-		
 		if CustomCallbackHelper.RegisteredMods[i] == mod then
 			modAlreadyRegistered = true
 			break
 		end
-		
 	end
-	
 	--add mod to registered mods table
 	if not modAlreadyRegistered then
 		CustomCallbackHelper.RegisteredMods[#CustomCallbackHelper.RegisteredMods+1] = mod
 	end
-	
 	if not mod.CustomCallbackHelperExtended or mod.CustomCallbackHelperExtended < fileVersion then
-		
 		mod.CustomCallbackHelperExtended = fileVersion
-		
 		--AddCustomCallback
 		mod.AddCustomCallback = function(self, callbackId, fn, ...)
-			
 			CustomCallbackHelper.AddCallback(self, callbackId, fn, ...)
-			
 		end
-		
 		--RemoveCustomCallback
 		mod.RemoveCustomCallback = function(self, callbackId, fn)
-		
 			CustomCallbackHelper.RemoveCallback(self, callbackId, fn)
-			
 		end
-	
 	end
-	
+	return mod
 end
 
 --override RegisterMod to add AddCustomCallback function
 CustomCallbackHelper.OldRegisterMod = CustomCallbackHelper.OldRegisterMod or Isaac.RegisterMod
 function CustomCallbackHelper.RegisterMod(mod, modname, apiversion)
 
-	--check if a mod that shares this mod's name is already in the table, and remove all of its callbacks if it is
-	--helps handle luamod better
-	for i=#CustomCallbackHelper.RegisteredMods, 1, -1 do
-		
-		if CustomCallbackHelper.RegisteredMods[i].Name == mod.Name then
-		
-			CustomCallbackHelper.RemoveAllCallbacks(CustomCallbackHelper.RegisteredMods[i])
-			
-			table.remove(CustomCallbackHelper.RegisteredMods, i)
-			
-		end
-		
+	if type(mod) == "string" then
+		mod = {}
+		modname = mod
+		apiversion = modname
 	end
-	
-	--call the old register mod function
-	--pcall to catch any errors
-	local modRegistered, returned = pcall(CustomCallbackHelper.OldRegisterMod, mod, modname, apiversion)
-	
-	--erroring
-	if not modRegistered then
-	
-		returned = string.gsub(returned, "customcallbackhelper.OldRegisterMod", "RegisterMod")
-		error(returned, 2)
-		
+	if type(mod) == "nil" then
+		mod = {}
 	end
+
+	if not mod.path then
+		mod.path = ""
+	end
+	mod = CustomCallbackHelper.OldRegisterMod(mod, modname, apiversion or 1)
 	
 	if type(mod) == "table" then
-	
+		for i=#CustomCallbackHelper.RegisteredMods, 1, -1 do
+			if CustomCallbackHelper.RegisteredMods[i].Name == mod.Name then
+				CustomCallbackHelper.RemoveAllCallbacks(CustomCallbackHelper.RegisteredMods[i])
+				table.remove(CustomCallbackHelper.RegisteredMods, i)
+			end
+		end
 		--extend the mod
 		CustomCallbackHelper.ExtendMod(mod)
-
 	end
 
-	return returned
+	return mod
 	
 end
 Isaac.RegisterMod = CustomCallbackHelper.RegisterMod
+--RegisterMod = CustomCallbackHelper.RegisterMod
 
 
 ------------------

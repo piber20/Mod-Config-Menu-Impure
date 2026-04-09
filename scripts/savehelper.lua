@@ -11,7 +11,7 @@
 -------------
 -- version --
 -------------
-local fileVersion = 1
+local fileVersion = 2
 
 --prevent older/same version versions of this script from loading
 if SaveHelper and SaveHelper.Version >= fileVersion then
@@ -77,12 +77,11 @@ if not CustomCallbackHelper then
 	
 end
 
-
 -----------
 -- setup --
 -----------
 SaveHelper.Mod = SaveHelper.Mod or RegisterMod("Save Helper", 1)
-
+CustomCallbackHelper.ExtendMod(SaveHelper.Mod)
 
 ----------
 --TABLES--
