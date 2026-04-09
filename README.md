@@ -7,8 +7,22 @@ The Mod Config Menu is a new menu that enables other mods to provide a simple an
 This mod does not do much on its own, to get into the real action you should download a mod which supports this menu.
 
 
-## My mods dont work!
+## Contributers (Thanks!)
+- Piber (me!)
+- Chifilly (continued)
+- kittenchilly (rep hud func)
+- laceous (kcolor alpha & dpad fixes)
+- Buurazu (additional ab+ compat)
+- sawalk (font quality)
+- Ba-koD (currentfocus getter)
 
+
+## Links
+Steam: https://steamcommunity.com/sharedfiles/filedetails/?id=3701683951
+Non-Steam: https://www.nexusmods.com/thebindingofisaacrebirth/mods/111
+
+
+## My mods dont work!
 - Make sure you have the latest version of mod config menu, visible in the mod config menu category
 - Restart the game!
 
