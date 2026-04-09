@@ -1,14 +1,5 @@
--- Function that makes it easy to load scripts regardless of DLC
-local function exec(path)
-	if type(include) == "function" then
-		return include(path) --repentance
-	else
-		return require(path) --afterbirth+
-	end
-end
-
-exec("scripts.customcallbacks")
-exec("scripts.savehelper")
+require("scripts.customcallbacks")
+require("scripts.savehelper")
 
 --create the mod
 local mod = RegisterMod("Mod Config Menu (Standalone)", 1)
@@ -38,7 +29,7 @@ mod:AddCustomCallback(CustomCallbacks.SH_POST_MOD_LOAD, function(_, modRef, save
 end, mod.Name)
 
 --load mod config menu
-exec("scripts.modconfig")
+require("scripts.modconfig")
 
 if not MCM.StandaloneSaveLoaded then
 	SaveHelper.Load(MCM.StandaloneMod)

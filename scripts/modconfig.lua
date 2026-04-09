@@ -3731,27 +3731,6 @@ MCM.AddBigBookChangeCallback = function(functionToAdd)
 end
 
 ModConfigMenu = MCM
-if not MCM.oldpcall then
-	MCM.oldpcall = pcall
-	function MCM.pcall(func, path, ...)
-		if path == "scripts.modconfig" then
-			return true, MCM
-		end
-		return MCM.oldpcall(func, path, ...)
-	end
-	pcall = MCM.pcall
-end
-ModConfigMenu = MCM
-if not MCM.oldrequire then
-	MCM.oldrequire = require
-	function MCM.require(path, ...)
-		if path == "scripts.modconfig" then
-			return MCM
-		end
-		return MCM.oldrequire(path, ...)
-	end
-	require = MCM.require
-end
 
 --Make old mods that use ScreenHelper still kinda work
 ScreenHelper = MCM
