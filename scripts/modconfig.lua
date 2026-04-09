@@ -405,7 +405,7 @@ function MCM.RoomIsSafe()
 end
 
 local versionPrintTimer = 0
-local isFirstRun
+local isFirstRun = true
 MCM.IsVisible = false
 function MCM.PostGameStarted()
 
