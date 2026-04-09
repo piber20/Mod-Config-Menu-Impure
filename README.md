@@ -7,7 +7,7 @@ The Mod Config Menu is a new menu that enables other mods to provide a simple an
 This mod does not do much on its own, to get into the real action you should download a mod which supports this menu.
 
 
-## Contributers (Thanks!)
+## Contributors (Thanks!)
 - Piber (me!)
 - Chifilly (continued)
 - kittenchilly (rep hud func)
