@@ -3741,6 +3741,17 @@ if not MCM.oldpcall then
 	end
 	pcall = MCM.pcall
 end
+ModConfigMenu = MCM
+if not MCM.oldrequire then
+	MCM.oldrequire = require
+	function MCM.require(path, ...)
+		if path == "scripts.modconfig" then
+			return MCM
+		end
+		return MCM.oldrequire(path, ...)
+	end
+	require = MCM.require
+end
 
 --Make old mods that use ScreenHelper still kinda work
 ScreenHelper = MCM
