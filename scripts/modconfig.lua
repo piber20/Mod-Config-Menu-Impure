@@ -520,7 +520,7 @@ Font16Bold:Load("font/teammeatfont16bold.fnt")
 
 function MCM.DrawFont(font, string, posx, posy, color, width, center)
 	if MCM.DLC >= 3 then
-		font:DrawStringUTF8(string, posx, posy, color, width, center)
+		font:DrawStringUTF8(string, posx, posy-2, color, width, center)
 	else
 		font:DrawString(string, posx, posy, color, width, center)
 	end
@@ -1019,8 +1019,12 @@ function MCM.SimpleAddSetting(settingType, categoryName, subcategoryName, config
 			elseif settingType == MCM.OptionType.KEYBIND_CONTROLLER then
 				deviceString = "controller"
 			end
-			
-			return "Press a button on your " .. deviceString .. " to change this setting.$newline$newline" .. keepSettingString .. "Press \"" .. goBackString .. "\" to go back and clear this setting."
+
+			if settingTable.NoUnbind then
+				return "Press a button on your " .. deviceString .. " to change this keybind.$newline$newline" .. keepSettingString .. "Press \"" .. goBackString .. "\" to go back and reset this to default."
+			else
+				return "Press a button on your " .. deviceString .. " to change this keybind.$newline$newline" .. keepSettingString .. "Press \"" .. goBackString .. "\" to go back and unbind this."
+			end
 			
 		end
 		
@@ -1477,6 +1481,7 @@ local openMenuKeyboardSetting = MCM.AddKeyboardSetting(
 )
 
 openMenuKeyboardSetting.IsOpenMenuKeybind = true
+openMenuKeyboardSetting.NoUnbind = true
 
 
 ------------------------
@@ -1492,9 +1497,6 @@ local openMenuControllerSetting = MCM.AddControllerSetting(
 )
 
 openMenuControllerSetting.IsOpenMenuKeybind = true
-
---f10 note
-MCM.AddText("Mod Config Menu", "F10 will always open this menu.")
 
 MCM.AddSpace("Mod Config Menu") --SPACE
 
@@ -1885,18 +1887,15 @@ function MCM.PostRender()
 	local pressingNonRebindableKey = false
 	local pressedToggleMenu = false
 
-	local openMenuGlobal = Keyboard.KEY_F10
 	local openMenuKeyboard = MCM.Config["Mod Config Menu"].OpenMenuKeyboard or Keyboard.KEY_L
 	local openMenuController = MCM.Config["Mod Config Menu"].OpenMenuController or Controller.STICK_RIGHT
-	
-	local takeScreenshot = Keyboard.KEY_F12
 
 	--handle version display on game start
 	if versionPrintTimer > 0 then
 	
 		local bottomRight = MCM.GetScreenBottomRight(0)
 
-		local openMenuButton = Keyboard.KEY_F10
+		local openMenuButton = Keyboard.KEY_L
 		if type(MCM.Config["Mod Config Menu"].OpenMenuKeyboard) == "number" and MCM.Config["Mod Config Menu"].OpenMenuKeyboard > -1 then
 			openMenuButton = MCM.Config["Mod Config Menu"].OpenMenuKeyboard
 		end
@@ -1964,18 +1963,13 @@ function MCM.PostRender()
 	
 		for i=0, 4 do
 		
-			if MCM.KeyboardTriggered(openMenuGlobal, i)
-			or (openMenuKeyboard > -1 and MCM.KeyboardTriggered(openMenuKeyboard, i))
+			if (openMenuKeyboard > -1 and MCM.KeyboardTriggered(openMenuKeyboard, i))
 			or (openMenuController > -1 and Input.IsButtonTriggered(openMenuController, i)) then
 				pressingNonRebindableKey = true
 				pressedToggleMenu = true
 				if not configMenuInPopup then
 					MCM.ToggleConfigMenu()
 				end
-			end
-			
-			if MCM.KeyboardTriggered(takeScreenshot, i) then
-				pressingNonRebindableKey = true
 			end
 			
 		end
@@ -2180,8 +2174,15 @@ function MCM.PostRender()
 									numberToChange = optionCurrent()
 								end
 								
-								if pressingButton == "BACK" or pressingButton == "LEFT" then
-									numberToChange = nil
+								if pressingButton == "BACK" or pressingButton == "LEFT" or pressingButton == "RESET" then
+									if (pressingButton == "RESET" or MCM.CurrentOption.NoUnbind) and MCM.CurrentOption.Default ~= nil then
+										numberToChange = MCM.CurrentOption.Default
+										if type(MCM.CurrentOption.Default) == "function" then
+											numberToChange = MCM.CurrentOption.Default()
+										end
+									elseif not MCM.CurrentOption.NoUnbind then
+										numberToChange = nil
+									end
 									receivedInput = true
 								else
 									for i=0, 4 do
