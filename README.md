@@ -18,12 +18,14 @@ This mod does not do much on its own, to get into the real action you should dow
 
 
 ## Links
+- Github: https://github.com/piber20/Mod-Config-Menu-Impure
 - Steam: https://steamcommunity.com/sharedfiles/filedetails/?id=3701683951
 - Non-Steam: https://www.nexusmods.com/thebindingofisaacrebirth/mods/111
 
 
-## My mods dont work!
+## My menu doesn't work!
 - Make sure you have the latest version of mod config menu, visible in the mod config menu category
+- Make sure you don't have other versions of the menu enabled, like "pure"
 - Restart the game!
 
 If you still have issues even after doing all this, please create an issue in the github repo: https://github.com/piber20/Mod-Config-Menu-Impure
