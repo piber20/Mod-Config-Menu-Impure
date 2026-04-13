@@ -4,7 +4,7 @@
 -- Chifilly's Mod Config Menu fork was 33.
 -- The "pure" version selected a starting point of 100 and incremented
 -- We'll start with 200 and increment. We'll display it as 2.00.
-local VERSION = 203
+local VERSION = 204
 
 -- Prevent older/same versions of this script from loading
 if MCM and MCM.Version and MCM.Version >= VERSION then

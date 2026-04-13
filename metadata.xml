@@ -20,6 +20,7 @@ This mod does not do much on its own, to get into the real action you should dow
 - Buurazu (additional ab+ compat)
 - sawalk (font quality)
 - Ba-koD (currentfocus getter)
+- [url=https://steamcommunity.com/profiles/76561198868976950]G0odie[/url] (thumbnail)
 
 
 [h1]Links[/h1]
@@ -57,7 +58,7 @@ Love what I do?
 
 Enjoy my mods?
 I have a discord server! discord.gg/DbYcutKuHV</description>
-    <version>1.4</version>
+    <version>1.5</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
 </metadata>
