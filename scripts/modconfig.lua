@@ -412,7 +412,7 @@ function MCM.RoomIsSafe()
 end
 
 function MCM.CanOpenMenu()
-	return ((MCM.RoomIsSafe() and MCM.GetIsPaused()) or not MCM.IsInGame()) and MCM.SaveGood
+	return ((MCM.RoomIsSafe() and not MCM.GetIsPaused()) or not MCM.IsInGame()) and MCM.SaveGood
 end
 
 local manualIngameCheck = false
@@ -478,9 +478,12 @@ MCM.Mod:AddCallback(ModCallbacks.MC_POST_UPDATE, MCM.PostUpdate)
 ------------------------------------
 --set up the menu sprites and font--
 ------------------------------------
-function MCM.GetMenuAnm2Sprite(animation, frame, color, anm2)
+function MCM.GetMenuAnm2Sprite(animation, frame, color, anm2, isMainMenu)
 
 	anm2 = anm2 or "gfx/ui/modconfig/menu.anm2"
+	if isMainMenu then
+		anm2 = string.gsub(anm2,".anm2","_mainmenu.anm2")
+	end
 	local sprite = Sprite()
 	
 	sprite:Load(anm2, true)
@@ -497,6 +500,8 @@ end
 --main menu sprites
 local MenuSprite = MCM.GetMenuAnm2Sprite("Idle", 0)
 local MenuOverlaySprite = MCM.GetMenuAnm2Sprite("IdleOverlay", 0)
+local MenuSpriteMainMenu = MCM.GetMenuAnm2Sprite("Idle", 0, nil, nil, true)
+local MenuOverlaySpriteMainMenu = MCM.GetMenuAnm2Sprite("IdleOverlay", 0, nil, nil, true)
 local PopupSprite = MCM.GetMenuAnm2Sprite("Popup", 0)
 
 --main cursors
@@ -519,6 +524,7 @@ local OptionsCursorSpriteDown = MCM.GetMenuAnm2Sprite("Cursor", 2, colorHalf)
 --other options pane objects
 local SubcategoryDividerSprite = MCM.GetMenuAnm2Sprite("Divider", 0, colorHalf)
 local SliderSprite = MCM.GetMenuAnm2Sprite("Slider1", 0)
+local SliderSpriteMainMenu = MCM.GetMenuAnm2Sprite("Slider1", 0, nil, nil, true)
 
 --strikeout
 local StrikeOutSprite = MCM.GetMenuAnm2Sprite("Strikeout", 0)
@@ -1925,9 +1931,13 @@ end
 --render the menu
 local leftCurrentOffset = 0
 local optionsCurrentOffset = 0
-MCM.ControlsEnabled = true
+MCM.ControlsEnabled = false
 MCM.WarningOffset = 28
 MCM.WarningOffsetDSS = 50
+MCM.RenderOffset = Vector(0,0)
+MCM.MainMenuRenderOffset = Vector(900,0)
+MCM.MainMenuViewPos = Vector(-685.55,-1161.65)
+MCM.InfoOffset = Vector(-4,106)
 function MCM.PostRender()
 
 	local game = nil
@@ -1948,6 +1958,12 @@ function MCM.PostRender()
 
 	local openMenuKeyboard = MCM.Config["Mod Config Menu"].OpenMenuKeyboard or Keyboard.KEY_L
 	local openMenuController = MCM.Config["Mod Config Menu"].OpenMenuController or Controller.STICK_RIGHT
+
+	local centerPos = MCM.GetScreenCenter()
+	local menuPos = centerPos + MCM.RenderOffset
+	if MCM.RGON > 0 and MenuManager.IsActive() then
+		menuPos = Isaac.WorldToMenuPosition(MainMenuType.OPTIONS, centerPos+MCM.MainMenuRenderOffset)
+	end
 
 	if MCM.SaveGood then
 	--handle version display on game start
@@ -2023,10 +2039,8 @@ function MCM.PostRender()
 	end
 
 	--handle toggling the menu
-	if MCM.ControlsEnabled and not isPaused then
-	
+	if not isPaused then
 		for i=0, 4 do
-		
 			if (openMenuKeyboard > -1 and MCM.KeyboardTriggered(openMenuKeyboard, i))
 			or (openMenuController > -1 and Input.IsButtonTriggered(openMenuController, i)) then
 				pressingNonRebindableKey = true
@@ -2035,23 +2049,23 @@ function MCM.PostRender()
 					MCM.ToggleConfigMenu()
 				end
 			end
-			
 		end
-		
 	end
-	
-	--force close the menu in some situations
-	if MCM.IsVisible then
-	
+
+	if MCM.RGON > 0 and MenuManager.IsActive() then
+		MCM.IsVisible = true
+		if MCM.ControlsEnabled then
+			MenuManager.SetViewPosition(Isaac.WorldToMenuPosition(MainMenuType.OPTIONS, MCM.MainMenuViewPos))
+		end
+	elseif MCM.ControlsEnabled then
+		--force close the menu in some situations
 		if isPaused then
 			MCM.CloseConfigMenu()
 		end
-		
 		if not MCM.CanOpenMenu() then
 			MCM.CloseConfigMenu()
 			sfx:Play(SoundEffect.SOUND_BOSS2INTRO_ERRORBUZZ, 0.75, 0, false, 1)
 		end
-		
 	end
 
 	--replace Dead Sea Scrolls' controller setting to not conflict with mcm's
@@ -2756,11 +2770,11 @@ function MCM.PostRender()
 				
 			end
 		end
-		
-		local centerPos = MCM.GetScreenCenter()
+
+		local infoPos = menuPos + MCM.InfoOffset
 		
 		--title pos handling
-		local titlePos = centerPos + Vector(68,-118)
+		local titlePos = menuPos + Vector(68,-118)
 		
 		--left pos handling
 		
@@ -2770,9 +2784,9 @@ function MCM.PostRender()
 		
 		local numLeft = #MCM.MenuData
 		
-		local leftPos = centerPos + Vector(-142,-102)
-		local leftPosTopmost = centerPos.Y - 116
-		local leftPosBottommost = centerPos.Y + 90
+		local leftPos = menuPos + Vector(-142,-102)
+		local leftPosTopmost = menuPos.Y - 116
+		local leftPosBottommost = menuPos.Y + 90
 		
 		if numLeft > 7 then
 		
@@ -2824,9 +2838,9 @@ function MCM.PostRender()
 		
 		local numOptions = 0
 		
-		local optionPos = centerPos + Vector(68,-18)
-		local optionPosTopmost = centerPos.Y - 108
-		local optionPosBottommost = centerPos.Y + 86
+		local optionPos = menuPos + Vector(68,-18)
+		local optionPosTopmost = menuPos.Y - 108
+		local optionPosBottommost = menuPos.Y + 86
 		
 		if MCM.CurrentSubcategory
 		and MCM.CurrentSubcategory.Options
@@ -2895,27 +2909,28 @@ function MCM.PostRender()
 		if optionsCurrentOffset ~= 0 then
 			optionPos = optionPos + Vector(0, optionsCurrentOffset)
 		end
-		
-		--info pos handling
-		local infoPos = centerPos + Vector(-4,106)
-	
-		MenuSprite:Render(centerPos, vecZero, vecZero)
+
+		if MCM.RGON > 0 and MenuManager.IsActive() then
+			MenuSpriteMainMenu:Render(menuPos, vecZero, vecZero)
+		else
+			MenuSprite:Render(menuPos, vecZero, vecZero)
+		end
 		
 		--get if controls can be shown
 		local shouldShowControls = true
-		if configMenuInOptions and MCM.CurrentOption and MCM.CurrentOption.HideControls then
+		if not MCM.ControlsEnabled
+		or not MCM.Config["Mod Config Menu"].ShowControls
+		or (configMenuInOptions and MCM.CurrentOption and MCM.CurrentOption.HideControls)
+		then
 			shouldShowControls = false
 		end
-		if not MCM.Config["Mod Config Menu"].ShowControls then
-			shouldShowControls = false
+		if MCM.RGON > 0 and MenuManager.IsActive() then
+			if currentValue then
+				MenuManager.GetShadowSprite().Scale = vecZero
+			else
+				MenuManager.GetShadowSprite().Scale = vecOne
+			end
 		end
-	if MCM.RGON > 0 and MenuManager.IsActive() then
-		if currentValue then
-			MenuManager.GetShadowSprite().Scale = vecZero
-		else
-			MenuManager.GetShadowSprite().Scale = vecOne
-		end
-	end
 		
 		--category
 		local lastLeftPos = leftPos
@@ -2954,10 +2969,10 @@ function MCM.PostRender()
 		
 		--render scroll arrows
 		if leftCanScrollUp then
-			CursorSpriteUp:Render(centerPos + Vector(-78,-104), vecZero, vecZero) --up arrow
+			CursorSpriteUp:Render(menuPos + Vector(-78,-104), vecZero, vecZero) --up arrow
 		end
 		if leftCanScrollDown then
-			CursorSpriteDown:Render(centerPos + Vector(-78,70), vecZero, vecZero) --down arrow
+			CursorSpriteDown:Render(menuPos + Vector(-78,70), vecZero, vecZero) --down arrow
 		end
 		
 		------------------------
@@ -3204,10 +3219,17 @@ function MCM.PostRender()
 							if useAltSlider then
 								sliderString = "Slider2"
 							end
-							
-							SliderSprite.Color = scrollColor
-							SliderSprite:SetFrame(sliderString, numberToShow)
-							SliderSprite:Render(lastOptionPos - Vector(scrollOffset, -2), vecZero, vecZero)
+
+
+							if MCM.RGON > 0 and MenuManager.IsActive() then
+								SliderSpriteMainMenu.Color = scrollColor
+								SliderSpriteMainMenu:SetFrame(sliderString, numberToShow)
+								SliderSpriteMainMenu:Render(lastOptionPos - Vector(scrollOffset, -2), vecZero, vecZero)
+							else
+								SliderSprite.Color = scrollColor
+								SliderSprite:SetFrame(sliderString, numberToShow)
+								SliderSprite:Render(lastOptionPos - Vector(scrollOffset, -2), vecZero, vecZero)
+							end
 							
 						end
 						
@@ -3240,7 +3262,7 @@ function MCM.PostRender()
 			
 			--render scroll arrows
 			if optionsCanScrollUp then
-				OptionsCursorSpriteUp:Render(centerPos + Vector(193,-86), vecZero, vecZero) --up arrow
+				OptionsCursorSpriteUp:Render(menuPos + Vector(193,-86), vecZero, vecZero) --up arrow
 			end
 			if optionsCanScrollDown then
 			
@@ -3249,13 +3271,17 @@ function MCM.PostRender()
 					yPos = 40
 				end
 				
-				OptionsCursorSpriteDown:Render(centerPos + Vector(193,yPos), vecZero, vecZero) --down arrow
+				OptionsCursorSpriteDown:Render(menuPos + Vector(193,yPos), vecZero, vecZero) --down arrow
 				
 			end
 		
 		end
-		
-		MenuOverlaySprite:Render(centerPos, vecZero, vecZero)
+
+		if MCM.RGON > 0 and MenuManager.IsActive() then
+			MenuOverlaySpriteMainMenu:Render(menuPos, vecZero, vecZero)
+		else
+			MenuOverlaySprite:Render(menuPos, vecZero, vecZero)
+		end
 		
 		--title
 		local titleText = "Mod Config Menu"
@@ -3336,7 +3362,7 @@ function MCM.PostRender()
 		and MCM.CurrentOption
 		and (MCM.CurrentOption.Popup or MCM.CurrentOption.Restart or MCM.CurrentOption.Rerun) then
 		
-			PopupSprite:Render(centerPos, vecZero, vecZero)
+			PopupSprite:Render(menuPos, vecZero, vecZero)
 			
 			local popupTable = MCM.CurrentOption.Popup
 			
@@ -3362,7 +3388,7 @@ function MCM.PostRender()
 				
 				local popupTableDisplay = MCM.ConvertDisplayToTextTable(popupTable, lineWidth, Font10)
 				
-				local lastPopupPos = (centerPos + Vector(0,2)) - Vector(0,6*#popupTableDisplay)
+				local lastPopupPos = (menuPos + Vector(0,2)) - Vector(0,6*#popupTableDisplay)
 				for line=1, #popupTableDisplay do
 				
 					--text
@@ -3510,6 +3536,7 @@ function MCM.OpenConfigMenu()
 			end
 		end
 		MCM.IsVisible = true
+		MCM.ControlsEnabled = true
 	else
 		local sfx = SFXManager()
 		sfx:Play(SoundEffect.SOUND_BOSS2INTRO_ERRORBUZZ, 0.75, 0, false, 1)
@@ -3538,11 +3565,14 @@ function MCM.CloseConfigMenu()
 			MenuManager.SetInputMask(MCM.LastInputMask)
 		end
 	end
-	MCM.IsVisible = false
+	if (MCM.RGON > 0 and not MenuManager.IsActive()) or MCM.RGON == 0 then
+		MCM.IsVisible = false
+	end
+	MCM.ControlsEnabled = false
 end
 
 function MCM.ToggleConfigMenu()
-	if MCM.IsVisible then
+	if MCM.ControlsEnabled then
 		MCM.CloseConfigMenu()
 	else
 		MCM.OpenConfigMenu()
@@ -3571,15 +3601,10 @@ local toggleCommands = {
 	["mc"] = true
 }
 function MCM.ExecuteCmd(_, command, args)
-
 	command = command:lower()
-	
 	if toggleCommands[command] then
-	
 		MCM.ToggleConfigMenu()
-		
 	end
-	
 end
 MCM.Mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, MCM.ExecuteCmd)
 
