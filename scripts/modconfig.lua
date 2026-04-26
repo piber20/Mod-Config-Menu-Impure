@@ -99,6 +99,7 @@ if oldVersion then
 end
 
 local vecZero = Vector(0,0)
+local vecOne = Vector(1,1)
 
 ---------------
 -- Libraries --
@@ -411,7 +412,7 @@ function MCM.RoomIsSafe()
 end
 
 function MCM.CanOpenMenu()
-	return (MCM.RoomIsSafe() or not MCM.IsInGame()) and MCM.SaveGood
+	return ((MCM.RoomIsSafe() and MCM.GetIsPaused()) or not MCM.IsInGame()) and MCM.SaveGood
 end
 
 local manualIngameCheck = false
@@ -437,7 +438,7 @@ function MCM.PostGameStarted(_, saveSlot, isSlotSelected, rawSlot)
 	manualIngameCheck = true
 	rerunWarnMessage = nil
 
-	if MCM.Config["Mod Config Menu"].ShowControls and isFirstRun then
+	if MCM.Config["Mod Config Menu"].ShowHint and isFirstRun then
 		versionPrintTimer = 120
 	end
 	isFirstRun = false
@@ -1583,7 +1584,7 @@ resetKeybindSetting.IsResetKeybind = true
 -----------------
 --SHOW CONTROLS--
 -----------------
-MCM.AddBooleanSetting(
+local showControlsSetting = MCM.AddBooleanSetting(
 	"Mod Config Menu", --category
 	"ShowControls", --attribute in table
 	true, --default value
@@ -1592,7 +1593,29 @@ MCM.AddBooleanSetting(
 		[true] = "Yes",
 		[false] = "No"
 	},
-	"Disable this to remove the back and select widgets at the lower corners of the screen and remove the bottom start-up message."
+	"Disable this to remove the back and select widgets at the lower corners of the screen."
+)
+local oldShowControlsOnChange = showControlsSetting.OnChange
+showControlsSetting.OnChange = function(currentValue)
+	if MCM.RGON > 0 and MenuManager.IsActive() then
+		if currentValue then
+			MenuManager.GetShadowSprite().Scale = vecZero
+		else
+			MenuManager.GetShadowSprite().Scale = vecOne
+		end
+	end
+	return oldShowControlsOnChange(currentValue)
+end
+MCM.AddBooleanSetting(
+	"Mod Config Menu", --category
+	"ShowHint", --attribute in table
+	true, --default value
+	"Show Startup Hint", --display text
+	{ --value display text
+		[true] = "Yes",
+		[false] = "No"
+	},
+	"Disable this to remove the bottom start-up message."
 )
 
 --[[
@@ -2886,6 +2909,13 @@ function MCM.PostRender()
 		if not MCM.Config["Mod Config Menu"].ShowControls then
 			shouldShowControls = false
 		end
+	if MCM.RGON > 0 and MenuManager.IsActive() then
+		if currentValue then
+			MenuManager.GetShadowSprite().Scale = vecZero
+		else
+			MenuManager.GetShadowSprite().Scale = vecOne
+		end
+	end
 		
 		--category
 		local lastLeftPos = leftPos
@@ -3473,6 +3503,9 @@ function MCM.OpenConfigMenu()
 				if MCM.LastInputMask == 0 then
 					MCM.LastInputMask = MCM.DefaultInputMask
 				end
+				if MCM.Config["Mod Config Menu"].ShowControls then
+					MenuManager.GetShadowSprite().Scale = vecZero
+				end
 				MenuManager.SetInputMask(0)
 			end
 		end
@@ -3501,6 +3534,7 @@ function MCM.CloseConfigMenu()
 			if MCM.LastInputMask == 0 then
 				MCM.LastInputMask = MCM.DefaultInputMask
 			end
+			MenuManager.GetShadowSprite().Scale = vecOne
 			MenuManager.SetInputMask(MCM.LastInputMask)
 		end
 	end
