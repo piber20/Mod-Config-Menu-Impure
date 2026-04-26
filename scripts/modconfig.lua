@@ -34,7 +34,7 @@ if (ModConfigMenu and not MCM) or (MCM and MCM.Version and MCM.Version < VERSION
 		else
 			MCM.Mod.RemoveCallback(ModCallbacks.MC_POST_GAME_STARTED, MCM.PostGameStarted)
 		end
-		if MCM.RGON then
+		if MCM.RGON and MCM.RGON > 0 then
 			MCM.Mod.RemoveCallback(ModCallbacks.MC_POST_SAVESLOT_LOAD, MCM.PostGameStarted)
 		end
 	end
@@ -44,12 +44,15 @@ if (ModConfigMenu and not MCM) or (MCM and MCM.Version and MCM.Version < VERSION
 	end
 	if MCM.PostRender then
 		MCM.Mod:RemoveCallback(ModCallbacks.MC_POST_RENDER, MCM.PostRender)
-		if MCM.RGON then
+		if MCM.RGON and MCM.RGON > 0 then
 			MCM.Mod:RemoveCallback(ModCallbacks.MC_MAIN_MENU_RENDER, MCM.PostRender)
 		end
 	end
 	if MCM.InputAction then
 		MCM.Mod:RemoveCallback(ModCallbacks.MC_INPUT_ACTION, MCM.InputAction)
+		if MCM.RGON and MCM.RGON > 0 then
+			MCM.Mod:AddCallback(ModCallbacks.MC_MENU_INPUT_ACTION, MCM.InputAction)
+		end
 	end
 	if MCM.ExecuteCmd then
 		MCM.Mod:RemoveCallback(ModCallbacks.MC_EXECUTE_CMD, MCM.ExecuteCmd)
@@ -3449,6 +3452,8 @@ if MCM.RGON > 0 then
 	MCM.Mod:AddCallback(ModCallbacks.MC_MAIN_MENU_RENDER, MCM.PostRender)
 end
 
+MCM.DefaultInputMask = 536870911
+MCM.LastInputMask = MCM.DefaultInputMask
 function MCM.OpenConfigMenu()
 	if MCM.CanOpenMenu() then
 		if MCM.IsInGame() then
@@ -3461,6 +3466,14 @@ function MCM.OpenConfigMenu()
 					local seeds = game:GetSeeds()
 					seeds:AddSeedEffect(SeedEffect.SEED_NO_HUD)
 				end
+			end
+		elseif MCM.RGON > 0 then
+			if MenuManager.IsActive() then
+				MCM.LastInputMask = MenuManager.GetInputMask()
+				if MCM.LastInputMask == 0 then
+					MCM.LastInputMask = MCM.DefaultInputMask
+				end
+				MenuManager.SetInputMask(0)
 			end
 		end
 		MCM.IsVisible = true
@@ -3483,6 +3496,13 @@ function MCM.CloseConfigMenu()
 			local seeds = game:GetSeeds()
 			seeds:RemoveSeedEffect(SeedEffect.SEED_NO_HUD)
 		end
+	elseif MCM.RGON > 0 then
+		if MenuManager.IsActive() then
+			if MCM.LastInputMask == 0 then
+				MCM.LastInputMask = MCM.DefaultInputMask
+			end
+			MenuManager.SetInputMask(MCM.LastInputMask)
+		end
 	end
 	MCM.IsVisible = false
 end
@@ -3496,7 +3516,7 @@ function MCM.ToggleConfigMenu()
 end
 
 function MCM.InputAction(_, entity, inputHook, buttonAction)
-	if MCM.IsVisible and buttonAction ~= ButtonAction.ACTION_FULLSCREEN and buttonAction ~= ButtonAction.ACTION_CONSOLE then
+	if MCM.IsVisible then
 		if inputHook == InputHook.IS_ACTION_PRESSED or inputHook == InputHook.IS_ACTION_TRIGGERED then 
 			return false
 		else
@@ -3505,6 +3525,9 @@ function MCM.InputAction(_, entity, inputHook, buttonAction)
 	end
 end
 MCM.Mod:AddCallback(ModCallbacks.MC_INPUT_ACTION, MCM.InputAction)
+if MCM.RGON > 0 then
+	MCM.Mod:AddCallback(ModCallbacks.MC_MENU_INPUT_ACTION, MCM.InputAction)
+end
 
 --console commands that toggle the menu
 local toggleCommands = {
