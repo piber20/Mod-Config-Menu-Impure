@@ -34,6 +34,9 @@ if (ModConfigMenu and not MCM) or (MCM and MCM.Version and MCM.Version < VERSION
 		else
 			MCM.Mod.RemoveCallback(ModCallbacks.MC_POST_GAME_STARTED, MCM.PostGameStarted)
 		end
+		if MCM.RGON then
+			MCM.Mod.RemoveCallback(ModCallbacks.MC_POST_SAVESLOT_LOAD, MCM.PostGameStarted)
+		end
 	end
 	
 	if MCM.PostUpdate then
@@ -41,6 +44,9 @@ if (ModConfigMenu and not MCM) or (MCM and MCM.Version and MCM.Version < VERSION
 	end
 	if MCM.PostRender then
 		MCM.Mod:RemoveCallback(ModCallbacks.MC_POST_RENDER, MCM.PostRender)
+		if MCM.RGON then
+			MCM.Mod:RemoveCallback(ModCallbacks.MC_MAIN_MENU_RENDER, MCM.PostRender)
+		end
 	end
 	if MCM.InputAction then
 		MCM.Mod:RemoveCallback(ModCallbacks.MC_INPUT_ACTION, MCM.InputAction)
@@ -57,6 +63,7 @@ if not MCM then
 	MCM = {}
 end
 MCM.Version = VERSION
+MCM.SaveGood = false
 MCM.DLC = 2
 if REPENTANCE then
 	MCM.DLC = 3
@@ -67,20 +74,20 @@ if REPENTANCE then
 		MCM.DLC = 4
 	end
 end
+MCM.RGON = 0
+if REPENTOGON then
+	MCM.RGON = 1
+end
 
 function MCM.GetVersionString(override)
-
 	local versionNum = MCM.Version
 	if override then
 		versionNum = override
 	end
-
 	local versionMain = math.floor(versionNum*0.01)
 	local versionSub = versionNum - (versionMain*100)
 	local versionString = "" .. versionMain .. "." .. versionSub
-
 	return versionString
-
 end
 
 Isaac.DebugString("Loading Mod Config Menu v" .. MCM.GetVersionString() .. "...")
@@ -379,43 +386,58 @@ versionPrintFont:Load("font/pftempestasevencondensed.fnt")
 --returns true if the room is clear and there are no active enemies and there are no projectiles
 MCM.IgnoreActiveEnemies = MCM.IgnoreActiveEnemies or {}
 function MCM.RoomIsSafe()
-
 	local roomHasDanger = false
-	
-	for _, entity in pairs(Isaac.GetRoomEntities()) do
-		if entity:IsActiveEnemy() and not entity:HasEntityFlags(EntityFlag.FLAG_FRIENDLY)
-		and (not MCM.IgnoreActiveEnemies[entity.Type] or (MCM.IgnoreActiveEnemies[entity.Type] and not MCM.IgnoreActiveEnemies[entity.Type][-1] and not MCM.IgnoreActiveEnemies[entity.Type][entity.Variant])) then
-			roomHasDanger = true
-		elseif entity.Type == EntityType.ENTITY_PROJECTILE and entity:ToProjectile().ProjectileFlags & ProjectileFlags.CANT_HIT_PLAYER ~= 1 then
-			roomHasDanger = true
-		elseif entity.Type == EntityType.ENTITY_BOMBDROP then
-			roomHasDanger = true
+	if MCM.IsInGame() then
+		for _, entity in pairs(Isaac.GetRoomEntities()) do
+			if entity:IsActiveEnemy() and not entity:HasEntityFlags(EntityFlag.FLAG_FRIENDLY)
+			and (not MCM.IgnoreActiveEnemies[entity.Type] or (MCM.IgnoreActiveEnemies[entity.Type] and not MCM.IgnoreActiveEnemies[entity.Type][-1] and not MCM.IgnoreActiveEnemies[entity.Type][entity.Variant])) then
+				roomHasDanger = true
+			elseif entity.Type == EntityType.ENTITY_PROJECTILE and entity:ToProjectile().ProjectileFlags & ProjectileFlags.CANT_HIT_PLAYER ~= 1 then
+				roomHasDanger = true
+			elseif entity.Type == EntityType.ENTITY_BOMBDROP then
+				roomHasDanger = true
+			end
+		end
+		local game = Game()
+		local room = game:GetRoom()
+		if room:IsClear() and not roomHasDanger then
+			return true
 		end
 	end
-	
-	local game = Game()
-	local room = game:GetRoom()
-	
-	if room:IsClear() and not roomHasDanger then
-		return true
-	end
-	
 	return false
-	
+end
+
+function MCM.CanOpenMenu()
+	return (MCM.RoomIsSafe() or not MCM.IsInGame()) and MCM.SaveGood
+end
+
+local manualIngameCheck = false
+function MCM.IsInGame()
+	if MCM.RGON > 0 then
+		return Isaac.IsInGame()
+	end
+	return manualIngameCheck
 end
 
 local versionPrintTimer = 0
 local isFirstRun = true
 MCM.IsVisible = false
-function MCM.PostGameStarted()
+function MCM.PostGameStarted(_, saveSlot, isSlotSelected, rawSlot)
 
+	if type(rawSlot) == "number" and type(isSlotSelected) == "boolean" then
+		if rawSlot > 0 and isSlotSelected == true then
+			MCM.SaveGood = true
+		end
+	else
+		MCM.SaveGood = true
+	end
+	manualIngameCheck = true
 	rerunWarnMessage = nil
 
 	if MCM.Config["Mod Config Menu"].ShowControls and isFirstRun then
 		versionPrintTimer = 120
 	end
 	isFirstRun = false
-	
 	MCM.IsVisible = false
 	
 	--add potato dummy to ignore list
@@ -433,19 +455,18 @@ if MCM.Mod.AddCustomCallback then
 else
 	MCM.Mod.AddCallback(ModCallbacks.MC_POST_GAME_STARTED, MCM.PostGameStarted)
 end
+if MCM.RGON > 0 then
+	MCM.Mod:AddCallback(ModCallbacks.MC_POST_SAVESLOT_LOAD, MCM.PostGameStarted)
+end
 
 
 ---------------
 --post update--
 ---------------
 function MCM.PostUpdate()
-
 	if versionPrintTimer > 0 then
-	
 		versionPrintTimer = versionPrintTimer - 1
-		
 	end
-	
 end
 MCM.Mod:AddCallback(ModCallbacks.MC_POST_UPDATE, MCM.PostUpdate)
 
@@ -1859,26 +1880,38 @@ local HudOffsetVisualTopRight = MCM.GetMenuAnm2Sprite("Offset", 1)
 local HudOffsetVisualBottomRight = MCM.GetMenuAnm2Sprite("Offset", 2)
 local HudOffsetVisualBottomLeft = MCM.GetMenuAnm2Sprite("Offset", 3)
 
+function MCM.GetIsPaused()
+	if AwaitingTextInput or CustomConsoleOpen then
+		return true
+	elseif DeadSeaScrollsMenu and DeadSeaScrollsMenu.OpenedMenu then
+		return true
+	elseif not MCM.IsInGame() then
+		return true
+	else
+		if (MCM.RGON > 0 and Isaac.IsInGame()) or MCM.RGON == 0 then
+			return Game():IsPaused()
+		else
+			return false
+		end
+	end
+end
+
 --render the menu
 local leftCurrentOffset = 0
 local optionsCurrentOffset = 0
 MCM.ControlsEnabled = true
 MCM.WarningOffset = 28
 MCM.WarningOffsetDSS = 50
-function MCM.GetIsPaused()
-	if AwaitingTextInput or CustomConsoleOpen then
-		return true
-	elseif DeadSeaScrollsMenu and DeadSeaScrollsMenu.OpenedMenu then
-		return true
-	else
-		return Game():IsPaused()
-	end
-end
-
 function MCM.PostRender()
 
-	local game = Game()
-	local isPaused = MCM.GetIsPaused()
+	local game = nil
+	local ingame = false
+	local isPaused = false
+	if MCM.IsInGame() then
+		ingame = true
+		game = Game()
+		local isPaused = MCM.GetIsPaused()
+	end
 	
 	local sfx = SFXManager()
 
@@ -1890,8 +1923,13 @@ function MCM.PostRender()
 	local openMenuKeyboard = MCM.Config["Mod Config Menu"].OpenMenuKeyboard or Keyboard.KEY_L
 	local openMenuController = MCM.Config["Mod Config Menu"].OpenMenuController or Controller.STICK_RIGHT
 
+	if MCM.SaveGood then
 	--handle version display on game start
 	if versionPrintTimer > 0 then
+
+		if not MCM.IsInGame() then
+			versionPrintTimer = versionPrintTimer - 0.5
+		end
 	
 		local bottomRight = MCM.GetScreenBottomRight(0)
 
@@ -1908,7 +1946,7 @@ function MCM.PostRender()
 		local text = "Press " .. openMenuButtonString .. " to open Mod Config Menu"
 		local versionPrintColor = KColor(1, 1, 0, (math.min(versionPrintTimer, 60)/60) * 0.5)
 		local warnOffset = MCM.WarningOffset
-		if DeadSeaScrollsMenu then
+		if ingame and DeadSeaScrollsMenu then
 			local level = game:GetLevel()
 			local isDSSTextDisplayed = level:GetStage() == LevelStage.STAGE1_1 and
 				level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and
@@ -1937,7 +1975,7 @@ function MCM.PostRender()
 		local text = restartWarnMessage or rerunWarnMessage
 		local warningPrintColor = KColor(1, 0, 0, 1)
 		local warnOffset = MCM.WarningOffset
-		if DeadSeaScrollsMenu then
+		if ingame and DeadSeaScrollsMenu then
 			local level = game:GetLevel()
 			local isDSSTextDisplayed = level:GetStage() == LevelStage.STAGE1_1 and
 				level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and
@@ -1983,7 +2021,7 @@ function MCM.PostRender()
 			MCM.CloseConfigMenu()
 		end
 		
-		if not MCM.RoomIsSafe() then
+		if not MCM.CanOpenMenu() then
 			MCM.CloseConfigMenu()
 			sfx:Play(SoundEffect.SOUND_BOSS2INTRO_ERRORBUZZ, 0.75, 0, false, 1)
 		end
@@ -2015,28 +2053,30 @@ function MCM.PostRender()
 	
 		if MCM.ControlsEnabled and not isPaused then
 
-			for i=0, game:GetNumPlayers()-1 do
-		
-				local player = Isaac.GetPlayer(i)
-				local data = player:GetData()
-				
-				--freeze players and disable their controls
-				player.Velocity = vecZero
-				
-				if not data.ConfigMenuPlayerPosition then
-					data.ConfigMenuPlayerPosition = player.Position
+			if ingame then
+				for i=0, game:GetNumPlayers()-1 do
+
+					local player = Isaac.GetPlayer(i)
+					local data = player:GetData()
+
+					--freeze players and disable their controls
+					player.Velocity = vecZero
+
+					if not data.ConfigMenuPlayerPosition then
+						data.ConfigMenuPlayerPosition = player.Position
+					end
+					player.Position = data.ConfigMenuPlayerPosition
+					if not data.ConfigMenuPlayerControlsDisabled then
+						player.ControlsEnabled = false
+						data.ConfigMenuPlayerControlsDisabled = true
+					end
+
+					--disable toggling Dead Sea Scrolls
+					if data.input and data.input.menu and data.input.menu.toggle then
+						data.input.menu.toggle = false
+					end
+
 				end
-				player.Position = data.ConfigMenuPlayerPosition
-				if not data.ConfigMenuPlayerControlsDisabled then
-					player.ControlsEnabled = false
-					data.ConfigMenuPlayerControlsDisabled = true
-				end
-				
-				--disable toggling Dead Sea Scrolls
-				if data.input and data.input.menu and data.input.menu.toggle then
-					data.input.menu.toggle = false
-				end
-				
 			end
 			
 			if not MCM.MultipleButtonPressed(ignoreActionButtons) then
@@ -3365,20 +3405,22 @@ function MCM.PostRender()
 		
 	else
 	
-		for i=0, game:GetNumPlayers()-1 do
-		
-			local player = Isaac.GetPlayer(i)
-			local data = player:GetData()
-			
-			--enable player controls
-			if data.ConfigMenuPlayerPosition then
-				data.ConfigMenuPlayerPosition = nil
+		if ingame then
+			for i=0, game:GetNumPlayers()-1 do
+
+				local player = Isaac.GetPlayer(i)
+				local data = player:GetData()
+
+				--enable player controls
+				if data.ConfigMenuPlayerPosition then
+					data.ConfigMenuPlayerPosition = nil
+				end
+				if data.ConfigMenuPlayerControlsDisabled then
+					player.ControlsEnabled = true
+					data.ConfigMenuPlayerControlsDisabled = false
+				end
+
 			end
-			if data.ConfigMenuPlayerControlsDisabled then
-				player.ControlsEnabled = true
-				data.ConfigMenuPlayerControlsDisabled = false
-			end
-			
 		end
 		
 		configMenuInSubcategory = false
@@ -3400,55 +3442,49 @@ function MCM.PostRender()
 		optionsCurrentOffset = 0
 		
 	end
+	end
 end
 MCM.Mod:AddCallback(ModCallbacks.MC_POST_RENDER, MCM.PostRender)
+if MCM.RGON > 0 then
+	MCM.Mod:AddCallback(ModCallbacks.MC_MAIN_MENU_RENDER, MCM.PostRender)
+end
 
 function MCM.OpenConfigMenu()
-
-	if MCM.RoomIsSafe() then
-	
-		if MCM.Config["Mod Config Menu"].HideHudInMenu then
-		
-			local game = Game()
-			if MCM.DLC >= 3 then
-				local hud = game:GetHUD()
-				hud:SetVisible(false)
-			else
-				local seeds = game:GetSeeds()
-				seeds:AddSeedEffect(SeedEffect.SEED_NO_HUD)
+	if MCM.CanOpenMenu() then
+		if MCM.IsInGame() then
+			if MCM.Config["Mod Config Menu"].HideHudInMenu then
+				local game = Game()
+				if MCM.DLC >= 3 then
+					local hud = game:GetHUD()
+					hud:SetVisible(false)
+				else
+					local seeds = game:GetSeeds()
+					seeds:AddSeedEffect(SeedEffect.SEED_NO_HUD)
+				end
 			end
-			
 		end
-		
 		MCM.IsVisible = true
-		
 	else
-	
 		local sfx = SFXManager()
 		sfx:Play(SoundEffect.SOUND_BOSS2INTRO_ERRORBUZZ, 0.75, 0, false, 1)
-		
 	end
-	
 end
 
 function MCM.CloseConfigMenu()
-
 	MCM.LeavePopup()
 	MCM.LeaveOptions()
 	MCM.LeaveSubcategory()
-
-	local game = Game()
-	if MCM.DLC >= 3 then
-		local hud = game:GetHUD()
-		hud:SetVisible(true)
-	else
-		local seeds = game:GetSeeds()
-		seeds:RemoveSeedEffect(SeedEffect.SEED_NO_HUD)
+	if MCM.IsInGame() then
+		local game = Game()
+		if MCM.DLC >= 3 then
+			local hud = game:GetHUD()
+			hud:SetVisible(true)
+		else
+			local seeds = game:GetSeeds()
+			seeds:RemoveSeedEffect(SeedEffect.SEED_NO_HUD)
+		end
 	end
-	
-	
 	MCM.IsVisible = false
-	
 end
 
 function MCM.ToggleConfigMenu()
@@ -3460,17 +3496,13 @@ function MCM.ToggleConfigMenu()
 end
 
 function MCM.InputAction(_, entity, inputHook, buttonAction)
-
 	if MCM.IsVisible and buttonAction ~= ButtonAction.ACTION_FULLSCREEN and buttonAction ~= ButtonAction.ACTION_CONSOLE then
-	
 		if inputHook == InputHook.IS_ACTION_PRESSED or inputHook == InputHook.IS_ACTION_TRIGGERED then 
 			return false
 		else
 			return 0
 		end
-		
 	end
-	
 end
 MCM.Mod:AddCallback(ModCallbacks.MC_INPUT_ACTION, MCM.InputAction)
 
