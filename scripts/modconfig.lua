@@ -412,7 +412,7 @@ function MCM.RoomIsSafe()
 end
 
 function MCM.CanOpenMenu()
-	return ((MCM.RoomIsSafe() and not MCM.GetIsPaused()) or not MCM.IsInGame()) and MCM.SaveGood
+	return ((MCM.RoomIsSafe() and not MCM.GetIsPaused()) or (not MCM.IsInGame() and MCM.RGON > 0 and MenuManager.GetActiveMenu() == MainMenuType.OPTIONS)) and MCM.SaveGood
 end
 
 local manualIngameCheck = false
@@ -431,6 +431,8 @@ function MCM.PostGameStarted(_, saveSlot, isSlotSelected, rawSlot)
 	if type(rawSlot) == "number" and type(isSlotSelected) == "boolean" then
 		if rawSlot > 0 and isSlotSelected == true then
 			MCM.SaveGood = true
+		else
+			MCM.SaveGood = false
 		end
 	else
 		MCM.SaveGood = true
@@ -1935,7 +1937,7 @@ MCM.ControlsEnabled = false
 MCM.WarningOffset = 28
 MCM.WarningOffsetDSS = 50
 MCM.RenderOffset = Vector(0,0)
-MCM.MainMenuRenderOffset = Vector(900,0)
+MCM.MainMenuRenderOffset = Vector(1700,720)
 MCM.MainMenuViewPos = Vector(-685.55,-1161.65)
 MCM.InfoOffset = Vector(-4,106)
 function MCM.PostRender()
@@ -1961,54 +1963,67 @@ function MCM.PostRender()
 
 	local centerPos = MCM.GetScreenCenter()
 	local menuPos = centerPos + MCM.RenderOffset
+	local menuGood = true
 	if MCM.RGON > 0 and MenuManager.IsActive() then
-		menuPos = Isaac.WorldToMenuPosition(MainMenuType.OPTIONS, centerPos+MCM.MainMenuRenderOffset)
+		menuGood = false
+		menuPos = Isaac.WorldToMenuPosition(MainMenuType.OPTIONS, MCM.MainMenuRenderOffset)
+		if MenuManager.GetActiveMenu() == MainMenuType.OPTIONS then
+			menuGood = true
+		end
 	end
 
-	if MCM.SaveGood then
 	--handle version display on game start
-	if versionPrintTimer > 0 then
-
-		if not MCM.IsInGame() then
-			versionPrintTimer = versionPrintTimer - 0.5
-		end
-	
-		local bottomRight = MCM.GetScreenBottomRight(0)
-
+	if MCM.SaveGood and not MCM.ControlsEnabled then
 		local openMenuButton = Keyboard.KEY_L
-		if type(MCM.Config["Mod Config Menu"].OpenMenuKeyboard) == "number" and MCM.Config["Mod Config Menu"].OpenMenuKeyboard > -1 then
-			openMenuButton = MCM.Config["Mod Config Menu"].OpenMenuKeyboard
+		if type(openMenuKeyboard) == "number" and openMenuKeyboard > -1 then
+			openMenuButton = openMenuKeyboard
 		end
-
 		local openMenuButtonString = "Unknown Key"
 		if MCM.KeyboardToString[openMenuButton] then
 			openMenuButtonString = MCM.KeyboardToString[openMenuButton]
 		end
-		
-		local text = "Press " .. openMenuButtonString .. " to open Mod Config Menu"
-		local versionPrintColor = KColor(1, 1, 0, (math.min(versionPrintTimer, 60)/60) * 0.5)
-		local warnOffset = MCM.WarningOffset
-		if ingame and DeadSeaScrollsMenu then
-			local level = game:GetLevel()
-			local isDSSTextDisplayed = level:GetStage() == LevelStage.STAGE1_1 and
-				level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and
-				game:GetRoom():IsFirstVisit() and
-				not DeadSeaScrollsMenu.IsOpen() and
-				DeadSeaScrollsMenu.GetMenuHintSetting() == 1
-			if MCM.DLC >= 3 then
-				isDSSTextDisplayed = isDSSTextDisplayed and
-					level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE and
-					level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE_B and
-					not game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH)
+
+		local versionText = nil
+		local versionAlpha = 0.5
+		if versionPrintTimer > 0 then
+			if not MCM.IsInGame() then
+				versionPrintTimer = versionPrintTimer - 0.5
+				versionAlpha = (math.min(versionPrintTimer, 60)/60) * versionAlpha
 			end
-			if isDSSTextDisplayed then
-				warnOffset = MCM.WarningOffsetDSS
+			versionText = "Press " .. openMenuButtonString .. " to open Mod Config Menu"
+			if MCM.RGON > 0 and MenuManager.IsActive() and MenuManager.GetActiveMenu() ~= MainMenuType.OPTIONS then
+				versionText = "Press " .. openMenuButtonString .. " on the Options screen to open Mod Config Menu"
 			end
+		elseif MCM.RGON > 0 and MenuManager.IsActive() and MenuManager.GetActiveMenu() == MainMenuType.OPTIONS then
+			versionText = "Press " .. openMenuButtonString .. " to open Mod Config Menu"
 		end
-		MCM.DrawFont(versionPrintFont, text, 0, bottomRight.Y - warnOffset, versionPrintColor, bottomRight.X, true)
-		
+
+		if versionText then
+			local versionPrintColor = KColor(1, 1, 0, versionAlpha)
+			local warnOffset = MCM.WarningOffset
+			if ingame and DeadSeaScrollsMenu then
+				local level = game:GetLevel()
+				local isDSSTextDisplayed = level:GetStage() == LevelStage.STAGE1_1 and
+					level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and
+					game:GetRoom():IsFirstVisit() and
+					not DeadSeaScrollsMenu.IsOpen() and
+					DeadSeaScrollsMenu.GetMenuHintSetting() == 1
+				if MCM.DLC >= 3 then
+					isDSSTextDisplayed = isDSSTextDisplayed and
+						level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE and
+						level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE_B and
+						not game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH)
+				end
+				if isDSSTextDisplayed then
+					warnOffset = MCM.WarningOffsetDSS
+				end
+			end
+			local bottomRight = MCM.GetScreenBottomRight(0)
+			MCM.DrawFont(versionPrintFont, versionText, 0, bottomRight.Y - warnOffset, versionPrintColor, bottomRight.X, true)
+		end
 	end
-	
+
+	if MCM.SaveGood and menuGood then
 	--on-screen warnings
 	if restartWarnMessage or rerunWarnMessage then
 	
@@ -2046,7 +2061,9 @@ function MCM.PostRender()
 				pressingNonRebindableKey = true
 				pressedToggleMenu = true
 				if not configMenuInPopup then
-					MCM.ToggleConfigMenu()
+					if MCM.RGON == 0 or (MCM.RGON > 0 and MenuManager.IsActive() and MenuManager.GetActiveMenu() == MainMenuType.OPTIONS) then
+						MCM.ToggleConfigMenu()
+					end
 				end
 			end
 		end
@@ -2054,7 +2071,9 @@ function MCM.PostRender()
 
 	if MCM.RGON > 0 and MenuManager.IsActive() then
 		MCM.IsVisible = true
-		if MCM.ControlsEnabled then
+		if MenuManager.GetActiveMenu() ~= MainMenuType.OPTIONS then
+			MCM.CloseConfigMenu()
+		elseif MCM.ControlsEnabled then
 			MenuManager.SetViewPosition(Isaac.WorldToMenuPosition(MainMenuType.OPTIONS, MCM.MainMenuViewPos))
 		end
 	elseif MCM.ControlsEnabled then
