@@ -78,7 +78,7 @@ if REPENTANCE then
 	end
 end
 MCM.RGON = 0
-if REPENTOGON then
+if REPENTOGON and MCM.DLC == 4 then
 	MCM.RGON = 1
 end
 
