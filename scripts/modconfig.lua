@@ -3580,7 +3580,7 @@ function MCM.ToggleConfigMenu()
 end
 
 function MCM.InputAction(_, entity, inputHook, buttonAction)
-	if MCM.IsVisible then
+	if MCM.ControlsEnabled and buttonAction ~= ButtonAction.ACTION_FULLSCREEN and buttonAction ~= ButtonAction.ACTION_CONSOLE then
 		if inputHook == InputHook.IS_ACTION_PRESSED or inputHook == InputHook.IS_ACTION_TRIGGERED then 
 			return false
 		else
