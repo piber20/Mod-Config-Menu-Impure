@@ -1948,7 +1948,7 @@ function MCM.PostRender()
 	if MCM.IsInGame() then
 		ingame = true
 		game = Game()
-		local isPaused = MCM.GetIsPaused()
+		isPaused = MCM.GetIsPaused()
 	end
 	
 	local sfx = SFXManager()
@@ -2061,7 +2061,7 @@ function MCM.PostRender()
 				pressingNonRebindableKey = true
 				pressedToggleMenu = true
 				if not configMenuInPopup then
-					if MCM.RGON == 0 or (MCM.RGON > 0 and MenuManager.IsActive() and MenuManager.GetActiveMenu() == MainMenuType.OPTIONS) then
+					if ingame or (not ingame and MCM.RGON > 0 and MenuManager.IsActive() and MenuManager.GetActiveMenu() == MainMenuType.OPTIONS) then
 						MCM.ToggleConfigMenu()
 					end
 				end
