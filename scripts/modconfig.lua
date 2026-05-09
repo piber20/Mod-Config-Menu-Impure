@@ -4,7 +4,7 @@
 -- Chifilly's Mod Config Menu fork was 33.
 -- The "pure" version selected a starting point of 100 and incremented
 -- We'll start with 200 and increment. We'll display it as 2.00.
-local VERSION = 208
+local VERSION = 209
 
 -- Prevent older/same versions of this script from loading
 if MCM and MCM.Version and MCM.Version >= VERSION then
@@ -34,9 +34,6 @@ if (ModConfigMenu and not MCM) or (MCM and MCM.Version and MCM.Version < VERSION
 		else
 			MCM.Mod.RemoveCallback(ModCallbacks.MC_POST_GAME_STARTED, MCM.PostGameStarted)
 		end
-		if MCM.RGON and MCM.RGON > 0 then
-			MCM.Mod.RemoveCallback(ModCallbacks.MC_POST_SAVESLOT_LOAD, MCM.PostGameStarted)
-		end
 	end
 	
 	if MCM.PostUpdate then
@@ -44,15 +41,9 @@ if (ModConfigMenu and not MCM) or (MCM and MCM.Version and MCM.Version < VERSION
 	end
 	if MCM.PostRender then
 		MCM.Mod:RemoveCallback(ModCallbacks.MC_POST_RENDER, MCM.PostRender)
-		if MCM.RGON and MCM.RGON > 0 then
-			MCM.Mod:RemoveCallback(ModCallbacks.MC_MAIN_MENU_RENDER, MCM.PostRender)
-		end
 	end
 	if MCM.InputAction then
 		MCM.Mod:RemoveCallback(ModCallbacks.MC_INPUT_ACTION, MCM.InputAction)
-		if MCM.RGON and MCM.RGON > 0 then
-			MCM.Mod:AddCallback(ModCallbacks.MC_MENU_INPUT_ACTION, MCM.InputAction)
-		end
 	end
 	if MCM.ExecuteCmd then
 		MCM.Mod:RemoveCallback(ModCallbacks.MC_EXECUTE_CMD, MCM.ExecuteCmd)
@@ -66,7 +57,6 @@ if not MCM then
 	MCM = {}
 end
 MCM.Version = VERSION
-MCM.SaveGood = false
 MCM.DLC = 2
 if REPENTANCE then
 	MCM.DLC = 3
@@ -77,20 +67,20 @@ if REPENTANCE then
 		MCM.DLC = 4
 	end
 end
-MCM.RGON = 0
-if REPENTOGON and MCM.DLC == 4 then
-	MCM.RGON = 1
-end
 
 function MCM.GetVersionString(override)
+
 	local versionNum = MCM.Version
 	if override then
 		versionNum = override
 	end
+
 	local versionMain = math.floor(versionNum*0.01)
 	local versionSub = versionNum - (versionMain*100)
 	local versionString = "" .. versionMain .. "." .. versionSub
+
 	return versionString
+
 end
 
 Isaac.DebugString("Loading Mod Config Menu v" .. MCM.GetVersionString() .. "...")
@@ -99,7 +89,6 @@ if oldVersion then
 end
 
 local vecZero = Vector(0,0)
-local vecOne = Vector(1,1)
 
 ---------------
 -- Libraries --
@@ -390,60 +379,43 @@ versionPrintFont:Load("font/pftempestasevencondensed.fnt")
 --returns true if the room is clear and there are no active enemies and there are no projectiles
 MCM.IgnoreActiveEnemies = MCM.IgnoreActiveEnemies or {}
 function MCM.RoomIsSafe()
+
 	local roomHasDanger = false
-	if MCM.IsInGame() then
-		for _, entity in pairs(Isaac.GetRoomEntities()) do
-			if entity:IsActiveEnemy() and not entity:HasEntityFlags(EntityFlag.FLAG_FRIENDLY)
-			and (not MCM.IgnoreActiveEnemies[entity.Type] or (MCM.IgnoreActiveEnemies[entity.Type] and not MCM.IgnoreActiveEnemies[entity.Type][-1] and not MCM.IgnoreActiveEnemies[entity.Type][entity.Variant])) then
-				roomHasDanger = true
-			elseif entity.Type == EntityType.ENTITY_PROJECTILE and entity:ToProjectile().ProjectileFlags & ProjectileFlags.CANT_HIT_PLAYER ~= 1 then
-				roomHasDanger = true
-			elseif entity.Type == EntityType.ENTITY_BOMBDROP then
-				roomHasDanger = true
-			end
-		end
-		local game = Game()
-		local room = game:GetRoom()
-		if room:IsClear() and not roomHasDanger then
-			return true
+	
+	for _, entity in pairs(Isaac.GetRoomEntities()) do
+		if entity:IsActiveEnemy() and not entity:HasEntityFlags(EntityFlag.FLAG_FRIENDLY)
+		and (not MCM.IgnoreActiveEnemies[entity.Type] or (MCM.IgnoreActiveEnemies[entity.Type] and not MCM.IgnoreActiveEnemies[entity.Type][-1] and not MCM.IgnoreActiveEnemies[entity.Type][entity.Variant])) then
+			roomHasDanger = true
+		elseif entity.Type == EntityType.ENTITY_PROJECTILE and entity:ToProjectile().ProjectileFlags & ProjectileFlags.CANT_HIT_PLAYER ~= 1 then
+			roomHasDanger = true
+		elseif entity.Type == EntityType.ENTITY_BOMBDROP then
+			roomHasDanger = true
 		end
 	end
+	
+	local game = Game()
+	local room = game:GetRoom()
+	
+	if room:IsClear() and not roomHasDanger then
+		return true
+	end
+	
 	return false
-end
-
-function MCM.CanOpenMenu()
-	return ((MCM.RoomIsSafe() and not MCM.GetIsPaused()) or (not MCM.IsInGame() and MCM.RGON > 0 and MenuManager.GetActiveMenu() == MainMenuType.OPTIONS)) and MCM.SaveGood
-end
-
-local manualIngameCheck = false
-function MCM.IsInGame()
-	if MCM.RGON > 0 then
-		return Isaac.IsInGame()
-	end
-	return manualIngameCheck
+	
 end
 
 local versionPrintTimer = 0
 local isFirstRun = true
 MCM.IsVisible = false
-function MCM.PostGameStarted(_, saveSlot, isSlotSelected, rawSlot)
+function MCM.PostGameStarted()
 
-	if type(rawSlot) == "number" and type(isSlotSelected) == "boolean" then
-		if rawSlot > 0 and isSlotSelected == true then
-			MCM.SaveGood = true
-		else
-			MCM.SaveGood = false
-		end
-	else
-		MCM.SaveGood = true
-	end
-	manualIngameCheck = true
 	rerunWarnMessage = nil
 
-	if MCM.Config["Mod Config Menu"].ShowHint and isFirstRun then
+	if MCM.Config["Mod Config Menu"].ShowControls and isFirstRun then
 		versionPrintTimer = 120
 	end
 	isFirstRun = false
+	
 	MCM.IsVisible = false
 	
 	--add potato dummy to ignore list
@@ -461,18 +433,19 @@ if MCM.Mod.AddCustomCallback then
 else
 	MCM.Mod.AddCallback(ModCallbacks.MC_POST_GAME_STARTED, MCM.PostGameStarted)
 end
-if MCM.RGON > 0 then
-	MCM.Mod:AddCallback(ModCallbacks.MC_POST_SAVESLOT_LOAD, MCM.PostGameStarted)
-end
 
 
 ---------------
 --post update--
 ---------------
 function MCM.PostUpdate()
+
 	if versionPrintTimer > 0 then
+	
 		versionPrintTimer = versionPrintTimer - 1
+		
 	end
+	
 end
 MCM.Mod:AddCallback(ModCallbacks.MC_POST_UPDATE, MCM.PostUpdate)
 
@@ -480,12 +453,9 @@ MCM.Mod:AddCallback(ModCallbacks.MC_POST_UPDATE, MCM.PostUpdate)
 ------------------------------------
 --set up the menu sprites and font--
 ------------------------------------
-function MCM.GetMenuAnm2Sprite(animation, frame, color, anm2, isMainMenu)
+function MCM.GetMenuAnm2Sprite(animation, frame, color, anm2)
 
 	anm2 = anm2 or "gfx/ui/modconfig/menu.anm2"
-	if isMainMenu then
-		anm2 = string.gsub(anm2,".anm2","_mainmenu.anm2")
-	end
 	local sprite = Sprite()
 	
 	sprite:Load(anm2, true)
@@ -502,8 +472,6 @@ end
 --main menu sprites
 local MenuSprite = MCM.GetMenuAnm2Sprite("Idle", 0)
 local MenuOverlaySprite = MCM.GetMenuAnm2Sprite("IdleOverlay", 0)
-local MenuSpriteMainMenu = MCM.GetMenuAnm2Sprite("Idle", 0, nil, nil, true)
-local MenuOverlaySpriteMainMenu = MCM.GetMenuAnm2Sprite("IdleOverlay", 0, nil, nil, true)
 local PopupSprite = MCM.GetMenuAnm2Sprite("Popup", 0)
 
 --main cursors
@@ -526,7 +494,6 @@ local OptionsCursorSpriteDown = MCM.GetMenuAnm2Sprite("Cursor", 2, colorHalf)
 --other options pane objects
 local SubcategoryDividerSprite = MCM.GetMenuAnm2Sprite("Divider", 0, colorHalf)
 local SliderSprite = MCM.GetMenuAnm2Sprite("Slider1", 0)
-local SliderSpriteMainMenu = MCM.GetMenuAnm2Sprite("Slider1", 0, nil, nil, true)
 
 --strikeout
 local StrikeOutSprite = MCM.GetMenuAnm2Sprite("Strikeout", 0)
@@ -1592,7 +1559,7 @@ resetKeybindSetting.IsResetKeybind = true
 -----------------
 --SHOW CONTROLS--
 -----------------
-local showControlsSetting = MCM.AddBooleanSetting(
+MCM.AddBooleanSetting(
 	"Mod Config Menu", --category
 	"ShowControls", --attribute in table
 	true, --default value
@@ -1601,29 +1568,7 @@ local showControlsSetting = MCM.AddBooleanSetting(
 		[true] = "Yes",
 		[false] = "No"
 	},
-	"Disable this to remove the back and select widgets at the lower corners of the screen."
-)
-local oldShowControlsOnChange = showControlsSetting.OnChange
-showControlsSetting.OnChange = function(currentValue)
-	if MCM.RGON > 0 and MenuManager.IsActive() then
-		if currentValue then
-			MenuManager.GetShadowSprite().Scale = vecZero
-		else
-			MenuManager.GetShadowSprite().Scale = vecOne
-		end
-	end
-	return oldShowControlsOnChange(currentValue)
-end
-MCM.AddBooleanSetting(
-	"Mod Config Menu", --category
-	"ShowHint", --attribute in table
-	true, --default value
-	"Show Startup Hint", --display text
-	{ --value display text
-		[true] = "Yes",
-		[false] = "No"
-	},
-	"Disable this to remove the bottom start-up message."
+	"Disable this to remove the back and select widgets at the lower corners of the screen and remove the bottom start-up message."
 )
 
 --[[
@@ -1914,42 +1859,26 @@ local HudOffsetVisualTopRight = MCM.GetMenuAnm2Sprite("Offset", 1)
 local HudOffsetVisualBottomRight = MCM.GetMenuAnm2Sprite("Offset", 2)
 local HudOffsetVisualBottomLeft = MCM.GetMenuAnm2Sprite("Offset", 3)
 
+--render the menu
+local leftCurrentOffset = 0
+local optionsCurrentOffset = 0
+MCM.ControlsEnabled = true
+MCM.WarningOffset = 28
+MCM.WarningOffsetDSS = 50
 function MCM.GetIsPaused()
 	if AwaitingTextInput or CustomConsoleOpen then
 		return true
 	elseif DeadSeaScrollsMenu and DeadSeaScrollsMenu.OpenedMenu then
 		return true
-	elseif not MCM.IsInGame() then
-		return true
 	else
-		if (MCM.RGON > 0 and Isaac.IsInGame()) or MCM.RGON == 0 then
-			return Game():IsPaused()
-		else
-			return false
-		end
+		return Game():IsPaused()
 	end
 end
 
---render the menu
-local leftCurrentOffset = 0
-local optionsCurrentOffset = 0
-MCM.ControlsEnabled = false
-MCM.WarningOffset = 28
-MCM.WarningOffsetDSS = 50
-MCM.RenderOffset = Vector(0,0)
-MCM.MainMenuRenderOffset = Vector(1700,720)
-MCM.MainMenuViewPos = Vector(-685.55,-1161.65)
-MCM.InfoOffset = Vector(-4,106)
 function MCM.PostRender()
 
-	local game = nil
-	local ingame = false
-	local isPaused = false
-	if MCM.IsInGame() then
-		ingame = true
-		game = Game()
-		isPaused = MCM.GetIsPaused()
-	end
+	local game = Game()
+	local isPaused = MCM.GetIsPaused()
 	
 	local sfx = SFXManager()
 
@@ -1961,69 +1890,45 @@ function MCM.PostRender()
 	local openMenuKeyboard = MCM.Config["Mod Config Menu"].OpenMenuKeyboard or Keyboard.KEY_L
 	local openMenuController = MCM.Config["Mod Config Menu"].OpenMenuController or Controller.STICK_RIGHT
 
-	local centerPos = MCM.GetScreenCenter()
-	local menuPos = centerPos + MCM.RenderOffset
-	local menuGood = true
-	if MCM.RGON > 0 and MenuManager.IsActive() then
-		menuGood = false
-		menuPos = Isaac.WorldToMenuPosition(MainMenuType.OPTIONS, MCM.MainMenuRenderOffset)
-		if MenuManager.GetActiveMenu() == MainMenuType.OPTIONS then
-			menuGood = true
-		end
-	end
-
 	--handle version display on game start
-	if MCM.SaveGood and not MCM.ControlsEnabled then
+	if versionPrintTimer > 0 then
+	
+		local bottomRight = MCM.GetScreenBottomRight(0)
+
 		local openMenuButton = Keyboard.KEY_L
-		if type(openMenuKeyboard) == "number" and openMenuKeyboard > -1 then
-			openMenuButton = openMenuKeyboard
+		if type(MCM.Config["Mod Config Menu"].OpenMenuKeyboard) == "number" and MCM.Config["Mod Config Menu"].OpenMenuKeyboard > -1 then
+			openMenuButton = MCM.Config["Mod Config Menu"].OpenMenuKeyboard
 		end
+
 		local openMenuButtonString = "Unknown Key"
 		if MCM.KeyboardToString[openMenuButton] then
 			openMenuButtonString = MCM.KeyboardToString[openMenuButton]
 		end
-
-		local versionText = nil
-		local versionAlpha = 0.5
-		if versionPrintTimer > 0 then
-			if not MCM.IsInGame() then
-				versionPrintTimer = versionPrintTimer - 0.5
-				versionAlpha = (math.min(versionPrintTimer, 60)/60) * versionAlpha
+		
+		local text = "Press " .. openMenuButtonString .. " to open Mod Config Menu"
+		local versionPrintColor = KColor(1, 1, 0, (math.min(versionPrintTimer, 60)/60) * 0.5)
+		local warnOffset = MCM.WarningOffset
+		if DeadSeaScrollsMenu then
+			local level = game:GetLevel()
+			local isDSSTextDisplayed = level:GetStage() == LevelStage.STAGE1_1 and
+				level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and
+				game:GetRoom():IsFirstVisit() and
+				not DeadSeaScrollsMenu.IsOpen() and
+				DeadSeaScrollsMenu.GetMenuHintSetting() == 1
+			if MCM.DLC >= 3 then
+				isDSSTextDisplayed = isDSSTextDisplayed and
+					level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE and
+					level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE_B and
+					not game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH)
 			end
-			versionText = "Press " .. openMenuButtonString .. " to open Mod Config Menu"
-			if MCM.RGON > 0 and MenuManager.IsActive() and MenuManager.GetActiveMenu() ~= MainMenuType.OPTIONS then
-				versionText = "Press " .. openMenuButtonString .. " on the Options screen to open Mod Config Menu"
+			if isDSSTextDisplayed then
+				warnOffset = MCM.WarningOffsetDSS
 			end
-		elseif MCM.RGON > 0 and MenuManager.IsActive() and MenuManager.GetActiveMenu() == MainMenuType.OPTIONS then
-			versionText = "Press " .. openMenuButtonString .. " to open Mod Config Menu"
 		end
-
-		if versionText then
-			local versionPrintColor = KColor(1, 1, 0, versionAlpha)
-			local warnOffset = MCM.WarningOffset
-			if ingame and DeadSeaScrollsMenu then
-				local level = game:GetLevel()
-				local isDSSTextDisplayed = level:GetStage() == LevelStage.STAGE1_1 and
-					level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and
-					game:GetRoom():IsFirstVisit() and
-					not DeadSeaScrollsMenu.IsOpen() and
-					DeadSeaScrollsMenu.GetMenuHintSetting() == 1
-				if MCM.DLC >= 3 then
-					isDSSTextDisplayed = isDSSTextDisplayed and
-						level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE and
-						level:GetStageType() ~= StageType.STAGETYPE_REPENTANCE_B and
-						not game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH)
-				end
-				if isDSSTextDisplayed then
-					warnOffset = MCM.WarningOffsetDSS
-				end
-			end
-			local bottomRight = MCM.GetScreenBottomRight(0)
-			MCM.DrawFont(versionPrintFont, versionText, 0, bottomRight.Y - warnOffset, versionPrintColor, bottomRight.X, true)
-		end
+		MCM.DrawFont(versionPrintFont, text, 0, bottomRight.Y - warnOffset, versionPrintColor, bottomRight.X, true)
+		
 	end
-
-	if MCM.SaveGood and menuGood then
+	
 	--on-screen warnings
 	if restartWarnMessage or rerunWarnMessage then
 	
@@ -2032,7 +1937,7 @@ function MCM.PostRender()
 		local text = restartWarnMessage or rerunWarnMessage
 		local warningPrintColor = KColor(1, 0, 0, 1)
 		local warnOffset = MCM.WarningOffset
-		if ingame and DeadSeaScrollsMenu then
+		if DeadSeaScrollsMenu then
 			local level = game:GetLevel()
 			local isDSSTextDisplayed = level:GetStage() == LevelStage.STAGE1_1 and
 				level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and
@@ -2054,37 +1959,35 @@ function MCM.PostRender()
 	end
 
 	--handle toggling the menu
-	if not isPaused then
+	if MCM.ControlsEnabled and not isPaused then
+	
 		for i=0, 4 do
+		
 			if (openMenuKeyboard > -1 and MCM.KeyboardTriggered(openMenuKeyboard, i))
 			or (openMenuController > -1 and Input.IsButtonTriggered(openMenuController, i)) then
 				pressingNonRebindableKey = true
 				pressedToggleMenu = true
 				if not configMenuInPopup then
-					if ingame or (not ingame and MCM.RGON > 0 and MenuManager.IsActive() and MenuManager.GetActiveMenu() == MainMenuType.OPTIONS) then
-						MCM.ToggleConfigMenu()
-					end
+					MCM.ToggleConfigMenu()
 				end
 			end
+			
 		end
+		
 	end
-
-	if MCM.RGON > 0 and MenuManager.IsActive() then
-		MCM.IsVisible = true
-		if MenuManager.GetActiveMenu() ~= MainMenuType.OPTIONS then
-			MCM.CloseConfigMenu()
-		elseif MCM.ControlsEnabled then
-			MenuManager.SetViewPosition(Isaac.WorldToMenuPosition(MainMenuType.OPTIONS, MCM.MainMenuViewPos))
-		end
-	elseif MCM.ControlsEnabled then
-		--force close the menu in some situations
+	
+	--force close the menu in some situations
+	if MCM.IsVisible then
+	
 		if isPaused then
 			MCM.CloseConfigMenu()
 		end
-		if not MCM.CanOpenMenu() then
+		
+		if not MCM.RoomIsSafe() then
 			MCM.CloseConfigMenu()
 			sfx:Play(SoundEffect.SOUND_BOSS2INTRO_ERRORBUZZ, 0.75, 0, false, 1)
 		end
+		
 	end
 
 	--replace Dead Sea Scrolls' controller setting to not conflict with mcm's
@@ -2112,30 +2015,28 @@ function MCM.PostRender()
 	
 		if MCM.ControlsEnabled and not isPaused then
 
-			if ingame then
-				for i=0, game:GetNumPlayers()-1 do
-
-					local player = Isaac.GetPlayer(i)
-					local data = player:GetData()
-
-					--freeze players and disable their controls
-					player.Velocity = vecZero
-
-					if not data.ConfigMenuPlayerPosition then
-						data.ConfigMenuPlayerPosition = player.Position
-					end
-					player.Position = data.ConfigMenuPlayerPosition
-					if not data.ConfigMenuPlayerControlsDisabled then
-						player.ControlsEnabled = false
-						data.ConfigMenuPlayerControlsDisabled = true
-					end
-
-					--disable toggling Dead Sea Scrolls
-					if data.input and data.input.menu and data.input.menu.toggle then
-						data.input.menu.toggle = false
-					end
-
+			for i=0, game:GetNumPlayers()-1 do
+		
+				local player = Isaac.GetPlayer(i)
+				local data = player:GetData()
+				
+				--freeze players and disable their controls
+				player.Velocity = vecZero
+				
+				if not data.ConfigMenuPlayerPosition then
+					data.ConfigMenuPlayerPosition = player.Position
 				end
+				player.Position = data.ConfigMenuPlayerPosition
+				if not data.ConfigMenuPlayerControlsDisabled then
+					player.ControlsEnabled = false
+					data.ConfigMenuPlayerControlsDisabled = true
+				end
+				
+				--disable toggling Dead Sea Scrolls
+				if data.input and data.input.menu and data.input.menu.toggle then
+					data.input.menu.toggle = false
+				end
+				
 			end
 			
 			if not MCM.MultipleButtonPressed(ignoreActionButtons) then
@@ -2789,11 +2690,11 @@ function MCM.PostRender()
 				
 			end
 		end
-
-		local infoPos = menuPos + MCM.InfoOffset
+		
+		local centerPos = MCM.GetScreenCenter()
 		
 		--title pos handling
-		local titlePos = menuPos + Vector(68,-118)
+		local titlePos = centerPos + Vector(68,-118)
 		
 		--left pos handling
 		
@@ -2803,9 +2704,9 @@ function MCM.PostRender()
 		
 		local numLeft = #MCM.MenuData
 		
-		local leftPos = menuPos + Vector(-142,-102)
-		local leftPosTopmost = menuPos.Y - 116
-		local leftPosBottommost = menuPos.Y + 90
+		local leftPos = centerPos + Vector(-142,-102)
+		local leftPosTopmost = centerPos.Y - 116
+		local leftPosBottommost = centerPos.Y + 90
 		
 		if numLeft > 7 then
 		
@@ -2857,9 +2758,9 @@ function MCM.PostRender()
 		
 		local numOptions = 0
 		
-		local optionPos = menuPos + Vector(68,-18)
-		local optionPosTopmost = menuPos.Y - 108
-		local optionPosBottommost = menuPos.Y + 86
+		local optionPos = centerPos + Vector(68,-18)
+		local optionPosTopmost = centerPos.Y - 108
+		local optionPosBottommost = centerPos.Y + 86
 		
 		if MCM.CurrentSubcategory
 		and MCM.CurrentSubcategory.Options
@@ -2928,27 +2829,19 @@ function MCM.PostRender()
 		if optionsCurrentOffset ~= 0 then
 			optionPos = optionPos + Vector(0, optionsCurrentOffset)
 		end
-
-		if MCM.RGON > 0 and MenuManager.IsActive() then
-			MenuSpriteMainMenu:Render(menuPos, vecZero, vecZero)
-		else
-			MenuSprite:Render(menuPos, vecZero, vecZero)
-		end
+		
+		--info pos handling
+		local infoPos = centerPos + Vector(-4,106)
+	
+		MenuSprite:Render(centerPos, vecZero, vecZero)
 		
 		--get if controls can be shown
 		local shouldShowControls = true
-		if not MCM.ControlsEnabled
-		or not MCM.Config["Mod Config Menu"].ShowControls
-		or (configMenuInOptions and MCM.CurrentOption and MCM.CurrentOption.HideControls)
-		then
+		if configMenuInOptions and MCM.CurrentOption and MCM.CurrentOption.HideControls then
 			shouldShowControls = false
 		end
-		if MCM.RGON > 0 and MenuManager.IsActive() then
-			if currentValue then
-				MenuManager.GetShadowSprite().Scale = vecZero
-			else
-				MenuManager.GetShadowSprite().Scale = vecOne
-			end
+		if not MCM.Config["Mod Config Menu"].ShowControls then
+			shouldShowControls = false
 		end
 		
 		--category
@@ -2988,10 +2881,10 @@ function MCM.PostRender()
 		
 		--render scroll arrows
 		if leftCanScrollUp then
-			CursorSpriteUp:Render(menuPos + Vector(-78,-104), vecZero, vecZero) --up arrow
+			CursorSpriteUp:Render(centerPos + Vector(-78,-104), vecZero, vecZero) --up arrow
 		end
 		if leftCanScrollDown then
-			CursorSpriteDown:Render(menuPos + Vector(-78,70), vecZero, vecZero) --down arrow
+			CursorSpriteDown:Render(centerPos + Vector(-78,70), vecZero, vecZero) --down arrow
 		end
 		
 		------------------------
@@ -3238,17 +3131,10 @@ function MCM.PostRender()
 							if useAltSlider then
 								sliderString = "Slider2"
 							end
-
-
-							if MCM.RGON > 0 and MenuManager.IsActive() then
-								SliderSpriteMainMenu.Color = scrollColor
-								SliderSpriteMainMenu:SetFrame(sliderString, numberToShow)
-								SliderSpriteMainMenu:Render(lastOptionPos - Vector(scrollOffset, -2), vecZero, vecZero)
-							else
-								SliderSprite.Color = scrollColor
-								SliderSprite:SetFrame(sliderString, numberToShow)
-								SliderSprite:Render(lastOptionPos - Vector(scrollOffset, -2), vecZero, vecZero)
-							end
+							
+							SliderSprite.Color = scrollColor
+							SliderSprite:SetFrame(sliderString, numberToShow)
+							SliderSprite:Render(lastOptionPos - Vector(scrollOffset, -2), vecZero, vecZero)
 							
 						end
 						
@@ -3281,7 +3167,7 @@ function MCM.PostRender()
 			
 			--render scroll arrows
 			if optionsCanScrollUp then
-				OptionsCursorSpriteUp:Render(menuPos + Vector(193,-86), vecZero, vecZero) --up arrow
+				OptionsCursorSpriteUp:Render(centerPos + Vector(193,-86), vecZero, vecZero) --up arrow
 			end
 			if optionsCanScrollDown then
 			
@@ -3290,17 +3176,13 @@ function MCM.PostRender()
 					yPos = 40
 				end
 				
-				OptionsCursorSpriteDown:Render(menuPos + Vector(193,yPos), vecZero, vecZero) --down arrow
+				OptionsCursorSpriteDown:Render(centerPos + Vector(193,yPos), vecZero, vecZero) --down arrow
 				
 			end
 		
 		end
-
-		if MCM.RGON > 0 and MenuManager.IsActive() then
-			MenuOverlaySpriteMainMenu:Render(menuPos, vecZero, vecZero)
-		else
-			MenuOverlaySprite:Render(menuPos, vecZero, vecZero)
-		end
+		
+		MenuOverlaySprite:Render(centerPos, vecZero, vecZero)
 		
 		--title
 		local titleText = "Mod Config Menu"
@@ -3381,7 +3263,7 @@ function MCM.PostRender()
 		and MCM.CurrentOption
 		and (MCM.CurrentOption.Popup or MCM.CurrentOption.Restart or MCM.CurrentOption.Rerun) then
 		
-			PopupSprite:Render(menuPos, vecZero, vecZero)
+			PopupSprite:Render(centerPos, vecZero, vecZero)
 			
 			local popupTable = MCM.CurrentOption.Popup
 			
@@ -3407,7 +3289,7 @@ function MCM.PostRender()
 				
 				local popupTableDisplay = MCM.ConvertDisplayToTextTable(popupTable, lineWidth, Font10)
 				
-				local lastPopupPos = (menuPos + Vector(0,2)) - Vector(0,6*#popupTableDisplay)
+				local lastPopupPos = (centerPos + Vector(0,2)) - Vector(0,6*#popupTableDisplay)
 				for line=1, #popupTableDisplay do
 				
 					--text
@@ -3483,22 +3365,20 @@ function MCM.PostRender()
 		
 	else
 	
-		if ingame then
-			for i=0, game:GetNumPlayers()-1 do
-
-				local player = Isaac.GetPlayer(i)
-				local data = player:GetData()
-
-				--enable player controls
-				if data.ConfigMenuPlayerPosition then
-					data.ConfigMenuPlayerPosition = nil
-				end
-				if data.ConfigMenuPlayerControlsDisabled then
-					player.ControlsEnabled = true
-					data.ConfigMenuPlayerControlsDisabled = false
-				end
-
+		for i=0, game:GetNumPlayers()-1 do
+		
+			local player = Isaac.GetPlayer(i)
+			local data = player:GetData()
+			
+			--enable player controls
+			if data.ConfigMenuPlayerPosition then
+				data.ConfigMenuPlayerPosition = nil
 			end
+			if data.ConfigMenuPlayerControlsDisabled then
+				player.ControlsEnabled = true
+				data.ConfigMenuPlayerControlsDisabled = false
+			end
+			
 		end
 		
 		configMenuInSubcategory = false
@@ -3520,78 +3400,59 @@ function MCM.PostRender()
 		optionsCurrentOffset = 0
 		
 	end
-	end
 end
 MCM.Mod:AddCallback(ModCallbacks.MC_POST_RENDER, MCM.PostRender)
-if MCM.RGON > 0 then
-	MCM.Mod:AddCallback(ModCallbacks.MC_MAIN_MENU_RENDER, MCM.PostRender)
-end
 
-MCM.DefaultInputMask = 536870911
-MCM.LastInputMask = MCM.DefaultInputMask
 function MCM.OpenConfigMenu()
-	if MCM.CanOpenMenu() then
-		if MCM.IsInGame() then
-			if MCM.Config["Mod Config Menu"].HideHudInMenu then
-				local game = Game()
-				if MCM.DLC >= 3 then
-					local hud = game:GetHUD()
-					hud:SetVisible(false)
-				else
-					local seeds = game:GetSeeds()
-					seeds:AddSeedEffect(SeedEffect.SEED_NO_HUD)
-				end
+
+	if MCM.RoomIsSafe() then
+	
+		if MCM.Config["Mod Config Menu"].HideHudInMenu then
+		
+			local game = Game()
+			if MCM.DLC >= 3 then
+				local hud = game:GetHUD()
+				hud:SetVisible(false)
+			else
+				local seeds = game:GetSeeds()
+				seeds:AddSeedEffect(SeedEffect.SEED_NO_HUD)
 			end
-		elseif MCM.RGON > 0 then
-			if MenuManager.IsActive() then
-				MCM.LastInputMask = MenuManager.GetInputMask()
-				if MCM.LastInputMask == 0 then
-					MCM.LastInputMask = MCM.DefaultInputMask
-				end
-				if MCM.Config["Mod Config Menu"].ShowControls then
-					MenuManager.GetShadowSprite().Scale = vecZero
-				end
-				MenuManager.SetInputMask(0)
-			end
+			
 		end
+		
 		MCM.IsVisible = true
-		MCM.ControlsEnabled = true
+		
 	else
+	
 		local sfx = SFXManager()
 		sfx:Play(SoundEffect.SOUND_BOSS2INTRO_ERRORBUZZ, 0.75, 0, false, 1)
+		
 	end
+	
 end
 
 function MCM.CloseConfigMenu()
+
 	MCM.LeavePopup()
 	MCM.LeaveOptions()
 	MCM.LeaveSubcategory()
-	if MCM.IsInGame() then
-		local game = Game()
-		if MCM.DLC >= 3 then
-			local hud = game:GetHUD()
-			hud:SetVisible(true)
-		else
-			local seeds = game:GetSeeds()
-			seeds:RemoveSeedEffect(SeedEffect.SEED_NO_HUD)
-		end
-	elseif MCM.RGON > 0 then
-		if MenuManager.IsActive() then
-			if MCM.LastInputMask == 0 then
-				MCM.LastInputMask = MCM.DefaultInputMask
-			end
-			MenuManager.GetShadowSprite().Scale = vecOne
-			MenuManager.SetInputMask(MCM.LastInputMask)
-		end
+
+	local game = Game()
+	if MCM.DLC >= 3 then
+		local hud = game:GetHUD()
+		hud:SetVisible(true)
+	else
+		local seeds = game:GetSeeds()
+		seeds:RemoveSeedEffect(SeedEffect.SEED_NO_HUD)
 	end
-	if (MCM.RGON > 0 and not MenuManager.IsActive()) or MCM.RGON == 0 then
-		MCM.IsVisible = false
-	end
-	MCM.ControlsEnabled = false
+	
+	
+	MCM.IsVisible = false
+	
 end
 
 function MCM.ToggleConfigMenu()
-	if MCM.ControlsEnabled then
+	if MCM.IsVisible then
 		MCM.CloseConfigMenu()
 	else
 		MCM.OpenConfigMenu()
@@ -3599,18 +3460,19 @@ function MCM.ToggleConfigMenu()
 end
 
 function MCM.InputAction(_, entity, inputHook, buttonAction)
-	if MCM.ControlsEnabled and buttonAction ~= ButtonAction.ACTION_FULLSCREEN and buttonAction ~= ButtonAction.ACTION_CONSOLE then
+
+	if MCM.IsVisible and buttonAction ~= ButtonAction.ACTION_FULLSCREEN and buttonAction ~= ButtonAction.ACTION_CONSOLE then
+	
 		if inputHook == InputHook.IS_ACTION_PRESSED or inputHook == InputHook.IS_ACTION_TRIGGERED then 
 			return false
 		else
 			return 0
 		end
+		
 	end
+	
 end
 MCM.Mod:AddCallback(ModCallbacks.MC_INPUT_ACTION, MCM.InputAction)
-if MCM.RGON > 0 then
-	MCM.Mod:AddCallback(ModCallbacks.MC_MENU_INPUT_ACTION, MCM.InputAction)
-end
 
 --console commands that toggle the menu
 local toggleCommands = {
@@ -3620,10 +3482,15 @@ local toggleCommands = {
 	["mc"] = true
 }
 function MCM.ExecuteCmd(_, command, args)
+
 	command = command:lower()
+	
 	if toggleCommands[command] then
+	
 		MCM.ToggleConfigMenu()
+		
 	end
+	
 end
 MCM.Mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, MCM.ExecuteCmd)
 
