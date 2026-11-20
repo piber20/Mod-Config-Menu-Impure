@@ -218,6 +218,9 @@ for button,num in pairs(Controller) do
 	MCM.ControllerToString[num] = buttonString
 end
 
+--Repentance+ v1.9.7.19.J510 moved the keyboard from index 0 to -2; -1 is "any device" and is skipped so one press does not count twice
+local ControllerIndexes = {-2, 0, 1, 2, 3, 4}
+
 --Work around a bug related to controller inputs
 function MCM.KeyboardTriggered(key, controllerIndex)
 	return Input.IsButtonTriggered(key, controllerIndex) and not Input.IsButtonTriggered(key % 32, controllerIndex)
@@ -230,7 +233,7 @@ end
 function MCM.MultipleActionTriggered(actions, controllerIndex, func)
 	local func = func or Input.IsActionTriggered
 	for i,action in pairs(actions) do
-		for index=0, 4 do
+		for _, index in ipairs(ControllerIndexes) do
 			if controllerIndex ~= nil then
 				index = controllerIndex
 			end
@@ -1961,7 +1964,7 @@ function MCM.PostRender()
 	--handle toggling the menu
 	if MCM.ControlsEnabled and not isPaused then
 	
-		for i=0, 4 do
+		for _, i in ipairs(ControllerIndexes) do
 		
 			if (openMenuKeyboard > -1 and MCM.KeyboardTriggered(openMenuKeyboard, i))
 			or (openMenuController > -1 and Input.IsButtonTriggered(openMenuController, i)) then
@@ -2185,7 +2188,7 @@ function MCM.PostRender()
 									end
 									receivedInput = true
 								else
-									for i=0, 4 do
+									for _, i in ipairs(ControllerIndexes) do
 										if optionType == MCM.OptionType.KEYBIND_KEYBOARD then
 											for j=32, 400 do
 												if MCM.KeyboardTriggered(j, i) then
