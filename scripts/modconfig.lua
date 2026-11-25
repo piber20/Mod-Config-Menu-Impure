@@ -4,7 +4,7 @@
 -- Chifilly's Mod Config Menu fork was 33.
 -- The "pure" version selected a starting point of 100 and incremented
 -- We'll start with 200 and increment. We'll display it as 2.00.
-local VERSION = 204
+local VERSION = 205
 
 -- Prevent older/same versions of this script from loading
 if MCM and MCM.Version and MCM.Version >= VERSION then
@@ -65,6 +65,9 @@ if REPENTANCE then
 	local metatable = getmetatable(room)
 	if type(metatable) == "table" and type(metatable.DamageGridWithSource) == "function" then
 		MCM.DLC = 4
+		if REPENTOGON then
+			MCM.DLC = 5
+		end
 	end
 end
 
@@ -220,9 +223,15 @@ end
 
 --Work around a bug related to controller inputs
 function MCM.KeyboardTriggered(key, controllerIndex)
+	if controllerIndex < 0 then
+		controllerIndex = -2
+	end
 	return Input.IsButtonTriggered(key, controllerIndex) and not Input.IsButtonTriggered(key % 32, controllerIndex)
 end
 function MCM.KeyboardPressed(key, controllerIndex)
+	if controllerIndex < 0 then
+		controllerIndex = -2
+	end
 	return Input.IsButtonPressed(key, controllerIndex) and not Input.IsButtonPressed(key % 32, controllerIndex)
 end
 
@@ -230,11 +239,15 @@ end
 function MCM.MultipleActionTriggered(actions, controllerIndex, func)
 	local func = func or Input.IsActionTriggered
 	for i,action in pairs(actions) do
-		for index=0, 4 do
+		for index=0, 10 do
 			if controllerIndex ~= nil then
 				index = controllerIndex
 			end
-			if func(action, index) then
+			local checkindex = index-1
+			if checkindex < 0 then
+				checkindex = -2
+			end
+			if func(action, checkindex) then
 				return action
 			end
 			if controllerIndex ~= nil then
@@ -548,6 +561,7 @@ MCM.OptionType.NUMBER = 5
 MCM.OptionType.KEYBIND_KEYBOARD = 6
 MCM.OptionType.KEYBIND_CONTROLLER = 7
 MCM.OptionType.TITLE = 8
+MCM.OptionType.POPUP = 9
 
 MCM.MenuData = MCM.MenuData or {}
 
@@ -830,6 +844,56 @@ function MCM.AddSpace(categoryName, subcategoryName)
 	
 end
 
+function MCM.AddPopup(categoryName, subcategoryName, text, color, popuptext)
+
+	if popuptext == nil and color == nil then
+		popuptext = text
+		text = subcategoryName
+		color = nil
+		subcategoryName = nil
+	elseif color == nil and type(text) ~= "string" and type(text) ~= "function" then
+		color = text
+		text = subcategoryName
+		subcategoryName = nil
+	end
+
+	if type(categoryName) ~= "string" and type(categoryName) ~= "number" then
+		error("MCM.AddPopup - No valid category name provided", 2)
+	end
+
+	subcategoryName = subcategoryName or "Uncategorized"
+	if type(subcategoryName) ~= "string" and type(subcategoryName) ~= "number" then
+		error("MCM.AddPopup - No valid subcategory name provided", 2)
+	end
+
+	local settingTable = {
+		Type = MCM.OptionType.POPUP,
+		Display = text,
+		Color = color,
+		PopupGfx = MCM.PopupGfx.WIDE_SMALL,
+		PopupWidth = 280,
+		Popup = function()
+
+			local goBackString = "back"
+			if MCM.Config.LastBackPressed then
+
+				if MCM.KeyboardToString[MCM.Config.LastBackPressed] then
+					goBackString = MCM.KeyboardToString[MCM.Config.LastBackPressed]
+				elseif MCM.ControllerToString[MCM.Config.LastBackPressed] then
+					goBackString = MCM.ControllerToString[MCM.Config.LastBackPressed]
+				end
+
+			end
+
+			return popuptext .. "$newline$newlinePress \"" .. goBackString .. "\" to go back."
+
+		end
+	}
+
+	return MCM.AddSetting(categoryName, subcategoryName, settingTable)
+
+end
+
 local altSlider = false
 function MCM.SimpleAddSetting(settingType, categoryName, subcategoryName, configTableAttribute, minValue, maxValue, modifyBy, defaultValue, displayText, displayValueProxies, displayDevice, info, color, functionName)
 	
@@ -985,7 +1049,7 @@ function MCM.SimpleAddSetting(settingType, categoryName, subcategoryName, config
 		settingTable.PopupGfx = MCM.PopupGfx.WIDE_SMALL
 		settingTable.PopupWidth = 280
 		settingTable.Popup = function()
-		
+
 			local currentValue = MCM.Config[categoryName][configTableAttribute]
 		
 			local goBackString = "back"
@@ -998,21 +1062,21 @@ function MCM.SimpleAddSetting(settingType, categoryName, subcategoryName, config
 				end
 				
 			end
-			
+
 			local keepSettingString = ""
 			if currentValue > -1 then
-			
+
 				local currentSettingString = nil
 				if (settingType == MCM.OptionType.KEYBIND_KEYBOARD and MCM.KeyboardToString[currentValue]) then
 					currentSettingString = MCM.KeyboardToString[currentValue]
 				elseif (settingType == MCM.OptionType.KEYBIND_CONTROLLER and MCM.ControllerToString[currentValue]) then
 					currentSettingString = MCM.ControllerToString[currentValue]
 				end
-				
+
 				keepSettingString = "This setting is currently set to \"" .. currentSettingString .. "\".$newlinePress this button to keep it unchanged.$newline$newline"
-				
+
 			end
-			
+
 			local deviceString = ""
 			if settingType == MCM.OptionType.KEYBIND_KEYBOARD then
 				deviceString = "keyboard"
@@ -1262,7 +1326,7 @@ end
 if Options then
 	MCM.Config["General"] = {}
 else
-	MCM.SetCategoryInfo("General", "Settings that affect the majority of mods")
+	MCM.SetCategoryInfo("General", "General use settings for other mods.$newlineNot all mods may respect the settings set here.")
 end
 
 --------------
@@ -1465,6 +1529,20 @@ MCM.SetCategoryInfo("Mod Config Menu", "Settings specific to Mod Config Menu.$ne
 
 MCM.AddTitle("Mod Config Menu", "Version " .. MCM.GetVersionString() .. "!") --VERSION INDICATOR
 
+local dlcname = "Unknown DLC"
+if MCM.DLC >= 5 then
+	dlcname = "Repentogon + Repentance+"
+elseif MCM.DLC >= 4 then
+	dlcname = "Repentance+"
+elseif MCM.DLC >= 3 then
+	dlcname = "Repentance"
+elseif MCM.DLC >= 2 then
+	dlcname = "Afterbirth+"
+elseif MCM.DLC >= 1 then
+	dlcname = "Afterbirth" --how???
+end
+MCM.AddText("Mod Config Menu", dlcname .. " detected!")
+
 MCM.AddSpace("Mod Config Menu") --SPACE
 
 
@@ -1571,10 +1649,17 @@ MCM.AddBooleanSetting(
 	"Disable this to remove the back and select widgets at the lower corners of the screen and remove the bottom start-up message."
 )
 
+-----------
+--CREDITS--
+-----------
+MCM.AddSpace("Mod Config Menu")
+
+local creditspopup = MCM.AddPopup("Mod Config Menu", "View Credits", "Piber: Main & original developer$newlineChifilly: MCM: Continued fork$newlinekittenchilly: Rep hud function$newlinelaceous: Font alpha and dpad fixes$newlineBuurazu: Additional ab+ compat$newlinesawalk: Rep font quality$newlineBa-koD: currentfocus getter func$newlineG0odie: Steam Workshop thumbnail$newlineJSG: Rep+ keyboard input bug workaround")
+
+creditspopup.PopupGfx = MCM.PopupGfx.WIDE_MEDIUM
+
+
 --[[
-MCM.AddSpace("Mod Config Menu") --SPACE
-
-
 -----------------
 --COMPATIBILITY--
 -----------------
@@ -1961,17 +2046,17 @@ function MCM.PostRender()
 	--handle toggling the menu
 	if MCM.ControlsEnabled and not isPaused then
 	
-		for i=0, 4 do
-		
-			if (openMenuKeyboard > -1 and MCM.KeyboardTriggered(openMenuKeyboard, i))
-			or (openMenuController > -1 and Input.IsButtonTriggered(openMenuController, i)) then
+		for i=0, 10 do
+
+			if (openMenuKeyboard > -1 and MCM.KeyboardTriggered(openMenuKeyboard, i-1))
+			or (openMenuController > -1 and Input.IsButtonTriggered(openMenuController, i-1)) then
 				pressingNonRebindableKey = true
 				pressedToggleMenu = true
 				if not configMenuInPopup then
 					MCM.ToggleConfigMenu()
 				end
 			end
-			
+
 		end
 		
 	end
@@ -2185,10 +2270,10 @@ function MCM.PostRender()
 									end
 									receivedInput = true
 								else
-									for i=0, 4 do
+									for i=0, 10 do
 										if optionType == MCM.OptionType.KEYBIND_KEYBOARD then
 											for j=32, 400 do
-												if MCM.KeyboardTriggered(j, i) then
+												if MCM.KeyboardTriggered(j, i-1) then
 													numberToChange = j
 													receivedInput = true
 													break
@@ -2196,7 +2281,7 @@ function MCM.PostRender()
 											end
 										else
 											for j=0, 31 do
-												if Input.IsButtonTriggered(j, i) then
+												if Input.IsButtonTriggered(j, i-1) then
 													numberToChange = j
 													receivedInput = true
 													break
@@ -3036,7 +3121,8 @@ function MCM.PostRender()
 						or optionType == MCM.OptionType.NUMBER
 						or optionType == MCM.OptionType.KEYBIND_KEYBOARD
 						or optionType == MCM.OptionType.KEYBIND_CONTROLLER
-						or optionType == MCM.OptionType.TITLE then
+						or optionType == MCM.OptionType.TITLE
+						or optionType == MCM.OptionType.POPUP then
 							local textToDraw = optionDisplay
 							
 							if type(optionDisplay) == "function" then
