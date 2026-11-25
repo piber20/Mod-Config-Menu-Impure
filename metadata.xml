@@ -3,9 +3,12 @@
     <name> Mod Config Menu - Impure</name>
     <directory>mod config menu</directory>
     <id>3701683951</id>
-    <description>Mod Config Menu Impure is an updated version of the Mod Config Menu mod for Afterbirth+ by the original author which retains integral features such as the ability to embed it in other mods and removes some uneeded scripts. Compatibility with old mods or mods made for unofficial versions of Mod Config Menu is kept as best as possible.
+    <description>Mod Config Menu Impure is an updated version of the Mod Config Menu mod by the original author. It retains integral features such as the ability to embed it in other mods and removes some unneeded scripts. Compatibility with old mods or mods made for unofficial versions of Mod Config Menu is kept as best as possible.
 
-The mod has been updated to work with Repentance and Repentance+ while keeping Afterbirth+ compatibility.
+The mod works with Afterbirth Plus, Repentance, and Repentance Plus. No separate versions needed, as long as you AT LEAST have Afterbirth and Afterbirth Plus.
+
+
+
 
 The Mod Config Menu is a new menu that enables other mods to provide a simple and easy way for the player to configure them.
 
@@ -22,6 +25,8 @@ This mod does not do much on its own, to get into the real action you should dow
 - Ba-koD (currentfocus getter)
 - [url=https://steamcommunity.com/profiles/76561198868976950]G0odie[/url] (thumbnail)
 
+This was proudly made by a human, no AI slop involved, nor will AI-generated contributions be accepted.
+
 
 [h1]Links[/h1]
 - Github: https://github.com/piber20/Mod-Config-Menu-Impure
@@ -31,7 +36,7 @@ This mod does not do much on its own, to get into the real action you should dow
 
 [h1]My menu doesn't work![/h1]
 - Make sure you have the latest version of mod config menu. (currently 2.4) You can see what version you currently have in the menu, if you're able to open it, or in the debug console.
-- Make sure you don't have other versions of the menu enabled, like "pure"
+- Make sure you don't have other versions of the menu enabled, like &quot;pure&quot;
 - Make sure your mods are enabled in the ingame mods menu
 - Make sure you're attempting to open it in a run, it can't open on the main menu
 - Make sure you're not hearing a buzzer when you're attempting to open it - that means MCM detects danger in the room
@@ -59,8 +64,14 @@ Love what I do?
 [url=http://paypal.me/pibergames]Donate to me on PayPal[/url], [url=https://ko-fi.com/piber20]or tip me on Ko-fi[/url]!
 
 Enjoy my mods?
-I have a discord server! discord.gg/DbYcutKuHV</description>
-    <version>2.205</version>
+I have a discord server! discord.gg/DbYcutKuHV
+
+
+
+
+comments have been disabled due to unhelpful or irrelevant bug reports
+report them to the github branch if you must, and make sure it is actually a bug caused by this mod</description>
+    <version>2.206</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
 </metadata>
